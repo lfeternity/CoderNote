@@ -1,26 +1,26 @@
-# Security Policy
+﻿# 安全策略
 
-## Supported Versions
+## 支持版本
 
-Only the latest code on the `main` branch is considered actively maintained for security fixes unless stated otherwise.
+除非另有说明，仅 `main` 分支上的最新代码被视为仍在积极维护并接收安全修复。
 
-## Reporting a Vulnerability
+## 漏洞报告
 
-If you find a security issue:
+如果你发现安全问题：
 
-1. Do not open a public issue, PR, or discussion with exploit details.
-2. Prefer GitHub Private Vulnerability Reporting or a GitHub Security Advisory if the repository has it enabled.
-3. If that is not available, use a private contact channel from the maintainer's public profile.
-4. Include:
-   - impact scope
-   - reproduction steps
-   - trigger conditions
-   - suggested remediation if available
+1. 不要在公开 issue、PR 或讨论中披露利用细节。
+2. 优先使用 GitHub 私密漏洞报告（Private Vulnerability Reporting）或 GitHub Security Advisory（若仓库已启用）。
+3. 如果上述方式不可用，请通过维护者公开资料中的私密联系方式反馈。
+4. 报告中请包含：
+   - 影响范围
+   - 复现步骤
+   - 触发条件
+   - 可行的修复建议（如有）
 
-Do not include real production secrets, private user data, or full database dumps in your report.
+报告中不要包含真实生产密钥、私有用户数据或完整数据库导出。
 
-## Response Expectations
+## 响应预期
 
-- The maintainer will first try to confirm reproducibility and impact.
-- Vulnerability details should stay private until a fix is ready.
-- If confirmed, fixes should land on the main branch first, with follow-up notes as needed.
+- 维护者会先确认漏洞是否可复现及其影响。
+- 在修复完成前，漏洞细节应保持私密。
+- 若漏洞被确认，应优先在主分支落地修复，并按需补充后续说明。

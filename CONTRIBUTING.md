@@ -1,32 +1,32 @@
-# Contributing
+﻿# 贡献指南
 
-Thanks for considering a contribution to CoderNote.
+感谢你考虑为 CoderNote 做贡献。
 
-## Development Environment
+## 开发环境
 
 - JDK 11+
 - Maven 3.8+
-- Node.js 18+ (Node.js 18 or 20 LTS recommended)
+- Node.js 18+（建议使用 Node.js 18 或 20 LTS）
 - MySQL 8.0+
 
-Project layout:
+项目结构：
 
-- `backend/`: Spring Boot service
-- `frontend/`: Vue 3 + Vite client
+- `backend/`：Spring Boot 服务
+- `frontend/`：Vue 3 + Vite 客户端
 
-## Local Setup
+## 本地启动
 
-1. Run [docs/schema.sql](/docs/schema.sql) to initialize the database.
-2. Use [backend/.env.example](/backend/.env.example) as the backend configuration reference.
-3. Use [frontend/.env.example](/frontend/.env.example) as the frontend configuration reference.
-4. Start the backend:
+1. 执行 [docs/schema.sql](/docs/schema.sql) 初始化数据库。
+2. 以后端 [backend/.env.example](/backend/.env.example) 作为配置参考。
+3. 以前端 [frontend/.env.example](/frontend/.env.example) 作为配置参考。
+4. 启动后端：
 
 ```bash
 cd backend
 mvn -DskipTests spring-boot:run
 ```
 
-5. Start the frontend:
+5. 启动前端：
 
 ```bash
 cd frontend
@@ -34,31 +34,31 @@ npm install
 npm run dev
 ```
 
-## Before You Submit
+## 提交前检查
 
-- Do not commit `node_modules`, `dist`, `target`, `uploads`, `.env`, database dumps, or other local artifacts.
-- If you change configuration behavior, update the README or example config files in the same PR.
-- Verify the main affected flows locally.
-- Add or update documentation when behavior, endpoints, or data structures change.
+- 不要提交 `node_modules`、`dist`、`target`、`uploads`、`.env`、数据库导出文件或其他本地产物。
+- 如果你修改了配置行为，请在同一个 PR 中更新 README 或示例配置文件。
+- 在本地验证受影响的主要流程。
+- 当行为、接口或数据结构发生变化时，请补充或更新文档。
 
-## Pull Request Expectations
+## Pull Request 期望
 
-- Use a clear PR title that describes the actual change.
-- Keep one PR focused on one topic when possible.
-- Include:
-  - what changed
-  - how it was verified
-  - what risk or impact exists
-  - whether config or data migration is involved
+- 使用清晰的 PR 标题准确描述变更内容。
+- 尽量让一个 PR 聚焦一个主题。
+- 请在描述中包含：
+  - 改了什么
+  - 如何验证
+  - 风险或影响是什么
+  - 是否涉及配置或数据迁移
 
-## Issue Expectations
+## Issue 期望
 
-- Bug reports should include reproduction steps, expected behavior, actual behavior, and environment details.
-- Feature requests should include the use case, expected value, and reasonable scope.
-- Do not report security issues in public issues. See [SECURITY.md](/SECURITY.md).
+- Bug 报告应包含复现步骤、预期行为、实际行为和环境信息。
+- 功能建议应说明使用场景、预期价值和合理范围。
+- 不要在公开 issue 中报告安全问题。请参阅 [SECURITY.md](/SECURITY.md)。
 
-## Style
+## 代码风格
 
-- Backend Java uses 4-space indentation.
-- Frontend, YAML, and Markdown use 2-space indentation.
-- The repository defaults to UTF-8 and LF with [/.editorconfig](/.editorconfig) and [/.gitattributes](/.gitattributes).
+- 后端 Java 使用 4 空格缩进。
+- 前端、YAML 和 Markdown 使用 2 空格缩进。
+- 仓库默认采用 UTF-8 与 LF，具体见 [/.editorconfig](/.editorconfig) 和 [/.gitattributes](/.gitattributes)。

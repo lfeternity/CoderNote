@@ -1,32 +1,32 @@
-# Contributor Code of Conduct
+﻿# 贡献者行为准则
 
-This project expects respectful, professional, and fact-based collaboration from everyone involved.
+本项目期望所有参与者都以尊重、专业和基于事实的方式协作。
 
-## Our Commitment
+## 我们的承诺
 
-We want the project to be welcoming to contributors of all backgrounds and experience levels. Discussion should stay grounded in technical facts, reproducible behavior, and constructive problem solving.
+我们希望项目对不同背景、不同经验水平的贡献者都保持友好。讨论应围绕技术事实、可复现行为和建设性的问题解决展开。
 
-## Expected Behavior
+## 期望行为
 
-- Discuss ideas, bugs, and tradeoffs with evidence.
-- Respect different experience levels and allow room for questions and corrections.
-- Give actionable review comments instead of vague criticism.
-- Treat security, privacy, and user data carefully.
-- Stay on topic and help move the work forward.
+- 讨论想法、缺陷和取舍时应提供依据。
+- 尊重不同经验水平，给提问和纠正留下空间。
+- 代码评审请给出可执行建议，避免含糊批评。
+- 谨慎对待安全、隐私和用户数据。
+- 保持聚焦主题，推动工作向前。
 
-## Unacceptable Behavior
+## 不可接受行为
 
-- Harassment, insults, threats, or discrimination.
-- Repeated bad-faith arguments or deliberate disruption.
-- Publishing private information, credentials, or undisclosed vulnerabilities.
-- Knowingly submitting harmful, deceptive, or irresponsible changes.
+- 骚扰、侮辱、威胁或歧视。
+- 反复进行恶意争论或故意扰乱协作。
+- 发布私人信息、凭据或未披露漏洞。
+- 明知有害、欺骗性或不负责任地提交变更。
 
-## Enforcement
+## 执行方式
 
-Repository maintainers may remove comments, issues, pull requests, or other content that violates this code of conduct and may restrict future participation when necessary.
+仓库维护者可删除违反本行为准则的评论、issue、pull request 或其他内容，并在必要时限制后续参与。
 
-For conduct reports, prefer a private contact channel instead of a public issue thread.
+如需报告行为问题，请优先使用私密沟通渠道，而非公开 issue 线程。
 
 ---
 
-This document is a simplified project-specific adaptation inspired by the Contributor Covenant collaboration principles.
+本文档是基于 Contributor Covenant 协作原则进行的简化项目化改编版本。
