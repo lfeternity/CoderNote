@@ -1,0 +1,65 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  application:
+    name: codernote-platform
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/coder_note?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+knife4j:
+  enable: true
+
+app:
+  upload:
+    base-dir: ${APP_UPLOAD_BASE_DIR:uploads}
+  avatar:
+    base-dir: ${APP_AVATAR_BASE_DIR:uploads/avatar}
+    max-size-bytes: 2097152
+    daily-limit: 10
+    output-size: 512
+  ai:
+    default-model: SAFE_GPT_SIM
+    timeout-ms: 60000
+    qwen:
+      api-key: ${QWEN_API_KEY:}
+      endpoint: ${QWEN_ENDPOINT:https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions}
+      model: ${QWEN_MODEL:qwen-plus}
+    kimi:
+      api-key: ${KIMI_API_KEY:}
+      endpoint: ${KIMI_ENDPOINT:https://api.moonshot.cn/v1/chat/completions}
+      model: ${KIMI_MODEL:moonshot-v1-8k}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      endpoint: ${OPENAI_ENDPOINT:https://api.openai.com/v1/chat/completions}
+      model: ${OPENAI_MODEL:gpt-5.2}
+  oauth:
+    frontend-base-url: ${OAUTH_FRONTEND_BASE_URL:http://127.0.0.1:5173}
+    state-expire-seconds: 300
+    code-expire-seconds: 300
+    pending-expire-seconds: 600
+  note-version:
+    max-versions-per-note: 50
+    content-size-limit-bytes: 5242880
