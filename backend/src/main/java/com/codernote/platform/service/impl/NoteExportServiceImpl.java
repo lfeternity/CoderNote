@@ -23,25 +23,19 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 public class NoteExportServiceImpl implements NoteExportService {
 
     private static final long QUERY_PAGE_SIZE = 200L;
     private static final float PAGE_MARGIN = 44f;
-    private static final float TITLE_FONT_SIZE = 16f;
     private static final float BODY_FONT_SIZE = 10.5f;
     private static final float LINE_HEIGHT = 15f;
     private static final float BLOCK_GAP = 6f;
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final NoteService noteService;
 
@@ -58,13 +52,13 @@ public class NoteExportServiceImpl implements NoteExportService {
                             String sortBy,
                             String sortOrder) {
         List<NoteDetailVO> notes = loadNotes(userId, language, tag, favoriteStatus, keyword, sortBy, sortOrder);
-        return buildPdf(notes, "筛选条件导出", buildFilterSummary(language, tag, favoriteStatus, keyword, sortBy, sortOrder));
+        return buildPdf(notes);
     }
 
     @Override
     public byte[] exportPdfByNoteId(Long userId, Long noteId) {
         NoteDetailVO detail = noteService.detail(userId, noteId);
-        return buildPdf(Collections.singletonList(detail), "单个笔记导出", "笔记ID=" + noteId);
+        return buildPdf(Collections.singletonList(detail));
     }
 
     @Override
@@ -82,23 +76,14 @@ public class NoteExportServiceImpl implements NoteExportService {
         for (Long noteId : dedupIds) {
             notes.add(noteService.detail(userId, noteId));
         }
-        return buildPdf(notes, "选中笔记导出", "选中数量=" + notes.size());
+        return buildPdf(notes);
     }
 
-    private byte[] buildPdf(List<NoteDetailVO> notes, String exportType, String scope) {
+    private byte[] buildPdf(List<NoteDetailVO> notes) {
         try (PDDocument document = new PDDocument();
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             PDFont font = loadFont(document);
             PdfCursor cursor = createPage(document);
-
-            cursor = writeParagraph(document, cursor, font, TITLE_FONT_SIZE, PAGE_MARGIN, "CoderNote 笔记导出");
-            cursor = writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN,
-                    "导出时间: " + LocalDateTime.now().format(DATE_TIME_FORMATTER));
-            cursor = writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN,
-                    "导出方式: " + (StringUtils.hasText(exportType) ? exportType : "筛选条件导出"));
-            cursor = writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN,
-                    "导出范围: " + (StringUtils.hasText(scope) ? scope : "全部"));
-            cursor.y -= BLOCK_GAP;
 
             if (CollectionUtils.isEmpty(notes)) {
                 cursor = writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN,
@@ -154,113 +139,21 @@ public class NoteExportServiceImpl implements NoteExportService {
         return notes;
     }
 
-    private String buildFilterSummary(String language,
-                                      String tag,
-                                      String favoriteStatus,
-                                      String keyword,
-                                      String sortBy,
-                                      String sortOrder) {
-        List<String> filters = new ArrayList<>();
-        if (StringUtils.hasText(language)) {
-            filters.add("语言=" + language.trim());
-        }
-        if (StringUtils.hasText(tag)) {
-            filters.add("标签=" + tag.trim());
-        }
-        if (StringUtils.hasText(favoriteStatus)) {
-            filters.add("收藏状态=" + toFavoriteLabel(favoriteStatus.trim()));
-        }
-        if (StringUtils.hasText(keyword)) {
-            filters.add("搜索=" + keyword.trim());
-        }
-        if (StringUtils.hasText(sortBy)) {
-            filters.add("排序字段=" + toSortByLabel(sortBy.trim()));
-        }
-        if (StringUtils.hasText(sortOrder)) {
-            filters.add("排序方式=" + toSortOrderLabel(sortOrder.trim()));
-        }
-
-        if (filters.isEmpty()) {
-            return "全部";
-        }
-        return String.join("；", filters);
-    }
-
-    private String toFavoriteLabel(String favoriteStatus) {
-        if ("FAVORITE".equalsIgnoreCase(favoriteStatus)) {
-            return "已收藏";
-        }
-        if ("UNFAVORITE".equalsIgnoreCase(favoriteStatus)) {
-            return "未收藏";
-        }
-        return favoriteStatus;
-    }
-
-    private String toSortByLabel(String sortBy) {
-        if ("created_at".equalsIgnoreCase(sortBy) || "createdAt".equalsIgnoreCase(sortBy)) {
-            return "创建时间";
-        }
-        if ("updated_at".equalsIgnoreCase(sortBy) || "updatedAt".equalsIgnoreCase(sortBy)) {
-            return "更新时间";
-        }
-        return sortBy;
-    }
-
-    private String toSortOrderLabel(String sortOrder) {
-        if ("asc".equalsIgnoreCase(sortOrder)) {
-            return "升序";
-        }
-        if ("desc".equalsIgnoreCase(sortOrder)) {
-            return "降序";
-        }
-        return sortOrder;
-    }
-
     private PdfCursor writeNoteBlock(PDDocument document,
                                      PdfCursor cursor,
                                      PDFont font,
                                      int index,
                                      NoteDetailVO detail) throws IOException {
-        cursor = drawDivider(document, cursor);
-        cursor = writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN,
-                "笔记 #" + index);
+        if (index > 1) {
+            cursor = drawDivider(document, cursor);
+        }
 
         cursor = writeField(document, cursor, font, "标题", detail.getTitle());
         cursor = writeField(document, cursor, font, "编程语言", detail.getLanguage());
-        cursor = writeField(document, cursor, font, "知识点标签", joinList(detail.getTagNames()));
-        cursor = writeField(document, cursor, font, "创建时间", formatDateTime(detail.getCreatedAt()));
-        cursor = writeField(document, cursor, font, "更新时间", formatDateTime(detail.getUpdatedAt()));
-        cursor = writeField(document, cursor, font, "收藏状态", Boolean.TRUE.equals(detail.getFavorite()) ? "已收藏" : "未收藏");
-        cursor = writeField(document, cursor, font, "关联错题", joinRelatedQuestionTitles(detail.getRelatedQuestions()));
-        cursor = writeField(document, cursor, font, "关联资料", joinRelatedMaterialTitles(detail.getRelatedMaterials()));
         cursor = writeField(document, cursor, font, "笔记内容", detail.getContent());
 
         cursor.y -= BLOCK_GAP;
         return cursor;
-    }
-
-    private String joinRelatedQuestionTitles(List<NoteDetailVO.LinkedQuestionVO> list) {
-        if (CollectionUtils.isEmpty(list)) {
-            return "-";
-        }
-        String value = list.stream()
-                .filter(Objects::nonNull)
-                .map(item -> StringUtils.hasText(item.getTitle()) ? item.getTitle().trim() : "#" + item.getId())
-                .filter(StringUtils::hasText)
-                .collect(Collectors.joining("、"));
-        return StringUtils.hasText(value) ? value : "-";
-    }
-
-    private String joinRelatedMaterialTitles(List<NoteDetailVO.LinkedMaterialVO> list) {
-        if (CollectionUtils.isEmpty(list)) {
-            return "-";
-        }
-        String value = list.stream()
-                .filter(Objects::nonNull)
-                .map(item -> StringUtils.hasText(item.getTitle()) ? item.getTitle().trim() : "#" + item.getId())
-                .filter(StringUtils::hasText)
-                .collect(Collectors.joining("、"));
-        return StringUtils.hasText(value) ? value : "-";
     }
 
     private PdfCursor writeField(PDDocument document,
@@ -379,25 +272,20 @@ public class NoteExportServiceImpl implements NoteExportService {
         if (text == null) {
             return "";
         }
-        return text.replace("\r\n", "\n").replace('\r', '\n').trim();
-    }
-
-    private String joinList(List<String> list) {
-        if (CollectionUtils.isEmpty(list)) {
-            return "-";
-        }
-        String joined = list.stream()
-                .filter(StringUtils::hasText)
-                .map(String::trim)
-                .collect(Collectors.joining(", "));
-        return StringUtils.hasText(joined) ? joined : "-";
-    }
-
-    private String formatDateTime(LocalDateTime dateTime) {
-        if (dateTime == null) {
-            return "-";
-        }
-        return dateTime.format(DATE_TIME_FORMATTER);
+        String normalized = text
+                .replace("\r\n", "\n")
+                .replace('\r', '\n')
+                .replaceAll("(?is)<script[^>]*>.*?</script>", " ")
+                .replaceAll("(?is)<style[^>]*>.*?</style>", " ")
+                .replaceAll("(?i)<br\\s*/?>", "\n")
+                .replaceAll("(?i)</p>", "\n")
+                .replaceAll("(?i)</h[1-6]>", "\n")
+                .replaceAll("(?i)</li>", "\n")
+                .replaceAll("(?is)<[^>]+>", " ")
+                .replace("&nbsp;", " ");
+        return normalized.replaceAll("[\\t\\x0B\\f ]+", " ")
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
     }
 
     private PDFont loadFont(PDDocument document) {

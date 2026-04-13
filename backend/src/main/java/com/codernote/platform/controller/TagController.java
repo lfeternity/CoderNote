@@ -41,7 +41,7 @@ public class TagController {
     public ApiResponse<Long> add(@Valid @RequestBody TagSaveRequest request,
                                  HttpServletRequest servletRequest) {
         Long userId = AuthContext.getRequiredUserId(servletRequest);
-        return ApiResponse.success("Tag created", tagService.create(userId, request.getName()));
+        return ApiResponse.success("Tag created", tagService.create(userId, request.getName(), request.getCoverPath()));
     }
 
     @PutMapping("/update/{tagId}")
@@ -49,7 +49,7 @@ public class TagController {
                                     @Valid @RequestBody TagSaveRequest request,
                                     HttpServletRequest servletRequest) {
         Long userId = AuthContext.getRequiredUserId(servletRequest);
-        tagService.update(userId, tagId, request.getName());
+        tagService.update(userId, tagId, request.getName(), request.getCoverPath());
         return ApiResponse.success("Tag updated", null);
     }
 

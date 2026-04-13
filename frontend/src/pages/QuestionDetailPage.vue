@@ -477,11 +477,11 @@ loadDetail()
 
 .main-block h3 {
   margin: 18px 0 8px;
-  color: #2d3f7a;
+  color: var(--text-accent-strong);
 }
 
 .empty-text {
-  color: #909399;
+  color: var(--text-sub);
 }
 
 .attachment-grid {
@@ -491,10 +491,10 @@ loadDetail()
 }
 
 .attachment-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 10px;
-  background: #fafbff;
+  background: var(--surface-soft);
 }
 
 .image-thumb {
@@ -512,7 +512,7 @@ loadDetail()
 }
 
 .file-name {
-  color: #303133;
+  color: var(--text-main);
   word-break: break-all;
 }
 
@@ -528,14 +528,14 @@ loadDetail()
 }
 
 .note-option {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   padding: 8px 10px;
-  background: #fafbff;
+  background: var(--surface-soft);
 }
 
 .note-option-sub {
-  color: #6b7280;
+  color: var(--text-sub);
 }
 
 @media (max-width: 1100px) {

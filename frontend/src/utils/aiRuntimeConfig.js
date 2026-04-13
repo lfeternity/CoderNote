@@ -2,7 +2,7 @@ const AI_RUNTIME_CONFIG_KEY = 'eb_ai_runtime_config'
 export const AI_RUNTIME_CONFIG_EVENT = 'eb:ai-runtime-config-updated'
 
 export const AI_BUILTIN_MODEL = 'SAFE_GPT_SIM'
-export const AI_PROVIDER_MODELS = ['OPENAI', 'QWEN', 'KIMI']
+export const AI_PROVIDER_MODELS = ['OPENAI', 'QWEN', 'KIMI', 'DEEPSEEK', 'GEMINI', 'CLAUDE']
 
 function trim(value) {
   return value == null ? '' : String(value).trim()

@@ -191,7 +191,6 @@ async function loadDetail() {
 
 loadDetail()
 </script>
-
 <style scoped>
 .relation-page {
   position: relative;
@@ -224,7 +223,7 @@ loadDetail()
   height: 230px;
   right: -60px;
   top: 28px;
-  background: rgba(59, 130, 246, 0.18);
+  background: rgba(201, 100, 66, 0.2);
 }
 
 .relation-page::after {
@@ -241,7 +240,11 @@ loadDetail()
   justify-content: space-between;
   gap: 14px;
   border: 1px solid var(--border-soft);
-  background: linear-gradient(120deg, var(--surface) 0%, rgba(236, 244, 255, 0.94) 100%);
+  background: linear-gradient(
+    120deg,
+    var(--surface) 0%,
+    color-mix(in srgb, var(--surface-soft) 84%, var(--surface)) 100%
+  );
 }
 
 .hero-copy {
@@ -282,7 +285,7 @@ loadDetail()
   gap: 8px;
   border-radius: 999px;
   border: 1px solid var(--border-soft);
-  background: rgba(255, 255, 255, 0.72);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
   padding: 5px 12px;
 }
 
@@ -307,7 +310,7 @@ loadDetail()
   width: 100%;
   border-radius: 12px;
   border: 1px solid var(--border-soft);
-  background: rgba(255, 255, 255, 0.84);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
   padding: 10px 12px;
   text-align: right;
 }
@@ -431,7 +434,11 @@ loadDetail()
   min-width: 0;
   padding: 12px;
   border: 1px solid var(--border-soft);
-  background: linear-gradient(165deg, var(--surface) 0%, rgba(240, 246, 255, 0.72) 100%);
+  background: linear-gradient(
+    165deg,
+    var(--surface) 0%,
+    color-mix(in srgb, var(--surface-soft) 76%, var(--surface)) 100%
+  );
 }
 
 .card-head {
@@ -456,7 +463,7 @@ loadDetail()
   padding: 3px 9px;
   border-radius: 999px;
   border: 1px solid var(--border-soft);
-  background: rgba(255, 255, 255, 0.82);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
   color: var(--text-accent);
   font-size: 12px;
 }
@@ -481,31 +488,67 @@ loadDetail()
 }
 
 :deep(.relation-table tr:hover > td.el-table__cell) {
-  background: rgba(30, 64, 175, 0.06);
+  background: rgba(201, 100, 66, 0.08);
 }
 
 :deep(.relation-table .el-link) {
   font-weight: 500;
 }
 
-:global(:root[data-theme='dark']) .relation-page .hero-card {
-  background: linear-gradient(120deg, rgba(17, 26, 45, 0.94) 0%, rgba(24, 39, 66, 0.92) 100%);
+:global(html[data-theme='dark']) .relation-page .hero-card {
+  background: linear-gradient(120deg, rgba(44, 31, 25, 0.96) 0%, rgba(58, 39, 31, 0.92) 100%);
 }
 
-:global(:root[data-theme='dark']) .relation-page .hero-tagline,
-:global(:root[data-theme='dark']) .relation-page .hero-total,
-:global(:root[data-theme='dark']) .relation-page .card-head span {
-  background: rgba(14, 23, 40, 0.72);
+:global(html[data-theme='dark']) .relation-page .hero-tagline,
+:global(html[data-theme='dark']) .relation-page .hero-total,
+:global(html[data-theme='dark']) .relation-page .card-head span {
+  background: rgba(32, 24, 20, 0.72);
 }
 
-:global(:root[data-theme='dark']) .relation-page .relation-card,
-:global(:root[data-theme='dark']) .relation-page .summary-card {
-  background: linear-gradient(160deg, rgba(17, 26, 45, 0.94) 0%, rgba(19, 33, 56, 0.9) 100%);
+:global(html[data-theme='dark']) .relation-page .relation-card,
+:global(html[data-theme='dark']) .relation-page .summary-card {
+  background: linear-gradient(160deg, rgba(36, 28, 23, 0.94) 0%, rgba(47, 34, 28, 0.9) 100%);
 }
 
-:global(:root[data-theme='dark']) .relation-page .metric-card,
-:global(:root[data-theme='dark']) .relation-page .summary-item {
-  background: linear-gradient(150deg, rgba(14, 23, 40, 0.95) 0%, rgba(20, 35, 58, 0.92) 100%);
+:global(html[data-theme='dark']) .relation-page .metric-card,
+:global(html[data-theme='dark']) .relation-page .summary-item {
+  background: linear-gradient(150deg, rgba(31, 24, 20, 0.95) 0%, rgba(43, 31, 26, 0.92) 100%);
+}
+
+:global(html[data-theme='dark']) .relation-page::before {
+  background: rgba(201, 100, 66, 0.16);
+}
+
+:global(html[data-theme='dark']) .relation-page::after {
+  background: rgba(111, 127, 104, 0.14);
+}
+
+:global(html[data-theme='dark']) .relation-page .hero-card,
+:global(html[data-theme='dark']) .relation-page .summary-card,
+:global(html[data-theme='dark']) .relation-page .relation-card,
+:global(html[data-theme='dark']) .relation-page .hero-tagline,
+:global(html[data-theme='dark']) .relation-page .hero-total,
+:global(html[data-theme='dark']) .relation-page .card-head span {
+  border-color: var(--border-soft);
+}
+
+:global(html[data-theme='dark']) .relation-page .hero-copy h2,
+:global(html[data-theme='dark']) .relation-page .card-head h3 {
+  color: var(--color-brand-soft);
+}
+
+:global(html[data-theme='dark']) .relation-page .hero-eyebrow,
+:global(html[data-theme='dark']) .relation-page .hero-desc,
+:global(html[data-theme='dark']) .relation-page .hero-tagline span,
+:global(html[data-theme='dark']) .relation-page .hero-total small,
+:global(html[data-theme='dark']) .relation-page .metric-card p,
+:global(html[data-theme='dark']) .relation-page .metric-card small {
+  color: var(--text-sub);
+}
+
+:global(html[data-theme='dark']) .relation-page .hero-tagline strong,
+:global(html[data-theme='dark']) .relation-page .hero-total strong {
+  color: var(--text-main);
 }
 
 @media (max-width: 1480px) {
@@ -547,3 +590,4 @@ loadDetail()
   }
 }
 </style>
+

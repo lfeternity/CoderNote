@@ -407,13 +407,13 @@ onBeforeUnmount(() => {
 
 .hint {
   margin: 0;
-  color: #5f6f95;
+  color: var(--text-sub);
   font-size: 12px;
 }
 
 .error-text {
   margin: 0;
-  color: #d73a49;
+  color: var(--danger);
   font-size: 13px;
 }
 
@@ -421,8 +421,8 @@ onBeforeUnmount(() => {
   width: 320px;
   height: 320px;
   border-radius: 14px;
-  border: 1px solid #d4def2;
-  background: linear-gradient(145deg, #f8fbff 0%, #edf3ff 100%);
+  border: 1px solid var(--border-soft);
+  background: linear-gradient(145deg, var(--surface) 0%, var(--surface-soft) 100%);
   overflow: hidden;
   position: relative;
   cursor: grab;
@@ -448,7 +448,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8a94ab;
+  color: var(--text-sub);
   font-size: 14px;
 }
 
@@ -461,14 +461,14 @@ onBeforeUnmount(() => {
 }
 
 .zoom-row span {
-  color: #40557f;
+  color: var(--text-accent);
   font-size: 13px;
 }
 
 .right-panel {
-  border: 1px solid #d4def2;
+  border: 1px solid var(--border-soft);
   border-radius: 14px;
-  background: #f7faff;
+  background: var(--surface);
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -478,7 +478,7 @@ onBeforeUnmount(() => {
 
 .right-panel h4 {
   margin: 0;
-  color: #2f4b8d;
+  color: var(--text-main);
   font-size: 14px;
 }
 
@@ -487,9 +487,9 @@ onBeforeUnmount(() => {
   height: 150px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid #ffffff;
-  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.15);
-  background: linear-gradient(135deg, #2f73ea 0%, #1e40af 100%);
+  border: 2px solid var(--surface);
+  box-shadow: 0 8px 20px rgba(78, 48, 34, 0.18);
+  background: linear-gradient(135deg, #d38f72 0%, #c46f4e 55%, #aa5539 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -502,7 +502,7 @@ onBeforeUnmount(() => {
 }
 
 .preview-empty {
-  color: #d9e4ff;
+  color: #fff2e8;
   font-size: 12px;
 }
 

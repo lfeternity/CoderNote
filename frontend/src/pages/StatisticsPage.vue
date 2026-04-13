@@ -233,11 +233,11 @@ import { computed, reactive, ref } from 'vue'
 import { getStatisticsOverview } from '../api/statistics'
 
 const KNOWLEDGE_GRADIENTS = [
-  'linear-gradient(90deg, #1e40af, #3b82f6)',
-  'linear-gradient(90deg, #2563eb, #60a5fa)',
-  'linear-gradient(90deg, #0284c7, #38bdf8)',
-  'linear-gradient(90deg, #0f766e, #14b8a6)',
-  'linear-gradient(90deg, #475569, #64748b)'
+  'linear-gradient(90deg, #c96442, #d97757)',
+  'linear-gradient(90deg, #b65a3c, #c98367)',
+  'linear-gradient(90deg, #8f5f46, #c29a79)',
+  'linear-gradient(90deg, #6f7f68, #8ea488)',
+  'linear-gradient(90deg, #5e5d59, #87867f)'
 ]
 
 const loading = ref(false)
@@ -311,14 +311,14 @@ const todayRateText = computed(() => formatPercent(todayRate.value, 0))
 const statusSegments = computed(() => {
   const total = totalQuestions.value
   const base = [
-    { key: 'mastered', label: '已掌握', value: masteredCount.value, color: '#10b981' },
-    { key: 'reviewing', label: '复习中', value: reviewingCount.value, color: '#f59e0b' },
-    { key: 'notMastered', label: '未复习', value: notMasteredCount.value, color: '#ef4444' }
+    { key: 'mastered', label: '已掌握', value: masteredCount.value, color: '#6f8c70' },
+    { key: 'reviewing', label: '复习中', value: reviewingCount.value, color: '#b0814c' },
+    { key: 'notMastered', label: '未复习', value: notMasteredCount.value, color: '#b53333' }
   ]
   const covered = base.reduce((sum, item) => sum + item.value, 0)
   const other = Math.max(0, total - covered)
   if (other > 0) {
-    base.push({ key: 'other', label: '其他状态', value: other, color: '#64748b' })
+    base.push({ key: 'other', label: '其他状态', value: other, color: '#87867f' })
   }
   return base.map((item) => {
     const percent = total > 0 ? clampPercent((item.value / total) * 100) : 0
@@ -393,7 +393,7 @@ const kpiCards = computed(() => {
       key: 'materialTotal',
       label: '资料总数',
       value: materialTotal.value,
-      tone: 'indigo',
+      tone: 'stone',
       percent: clampPercent(materialRatio),
       percentText: total > 0 ? `资料/错题 ${formatPercent(materialRatio, 0)}` : '资料沉淀'
     }
@@ -640,8 +640,8 @@ h2 {
   --tone-color: var(--danger);
 }
 
-.stat-card.tone-indigo {
-  --tone-color: #4f46e5;
+.stat-card.tone-stone {
+  --tone-color: #8f5f46;
 }
 
 .stat-meta {
@@ -660,7 +660,7 @@ h2 {
 .stat-pill {
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(30, 64, 175, 0.12);
+  background: rgba(201, 100, 66, 0.16);
   color: var(--text-accent);
   font-size: 11px;
 }
@@ -683,7 +683,7 @@ h2 {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--tone-color), color-mix(in srgb, var(--tone-color) 45%, #ffffff));
+  background: linear-gradient(90deg, var(--tone-color), color-mix(in srgb, var(--tone-color) 46%, var(--surface)));
 }
 
 .insight-grid {
@@ -736,7 +736,7 @@ h3 {
   height: 150px;
   border-radius: 50%;
   position: relative;
-  box-shadow: inset 0 0 0 1px rgba(30, 64, 175, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(201, 100, 66, 0.14);
 }
 
 .donut-wrap.empty .donut-ring {
@@ -819,22 +819,22 @@ h3 {
 
 .trend-sparkline-guide {
   fill: none;
-  stroke: rgba(100, 116, 139, 0.3);
+  stroke: rgba(94, 93, 89, 0.32);
   stroke-width: 0.6;
 }
 
 .trend-sparkline-area {
-  fill: rgba(59, 130, 246, 0.18);
+  fill: rgba(201, 100, 66, 0.2);
 }
 
 .trend-sparkline-line {
   fill: none;
-  stroke: #2563eb;
+  stroke: var(--primary);
   stroke-width: 1.4;
 }
 
 .trend-sparkline-dot {
-  fill: #1e40af;
+  fill: #8f5f46;
 }
 
 .sparkline-footer {
@@ -877,7 +877,7 @@ h3 {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #1d4ed8, #38bdf8);
+  background: linear-gradient(90deg, #b66a4b, #d28d6d);
 }
 
 .status-value {
@@ -923,7 +923,7 @@ h3 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(30, 64, 175, 0.12);
+  background: rgba(201, 100, 66, 0.14);
   color: var(--primary);
   font-size: 12px;
   font-weight: 600;
@@ -969,7 +969,7 @@ h3 {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #1e3a8a, #3b82f6);
+  background: linear-gradient(90deg, #8f5f46, #c98367);
 }
 
 .table-share-text {
@@ -1043,7 +1043,7 @@ h3 {
 .trend-bar-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #1e40af, #60a5fa);
+  background: linear-gradient(90deg, #b65a3c, #d28f72);
 }
 
 .trend-text {
@@ -1089,7 +1089,7 @@ h3 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(30, 64, 175, 0.12);
+  background: rgba(201, 100, 66, 0.14);
   color: var(--primary);
   font-size: 12px;
 }
@@ -1118,7 +1118,7 @@ h3 {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #f97316, #ef4444);
+  background: linear-gradient(90deg, #c27a46, #b53333);
 }
 
 @media (max-width: 1320px) {

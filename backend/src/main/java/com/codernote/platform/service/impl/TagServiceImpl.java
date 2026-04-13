@@ -54,6 +54,7 @@ public class TagServiceImpl implements TagService {
             TagListItemVO vo = new TagListItemVO();
             vo.setId(tag.getId());
             vo.setName(tag.getName());
+            vo.setCoverPath(tag.getCoverPath());
             vo.setUsageCount(usageCount);
             vo.setCanEdit(editable);
             vo.setCanDelete(editable && usageCount == 0);
@@ -65,11 +66,12 @@ public class TagServiceImpl implements TagService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Long create(Long userId, String name) {
+    public Long create(Long userId, String name, String coverPath) {
         if (!StringUtils.hasText(name)) {
             throw new BizException(400, "Tag name is required");
         }
         String normalized = name.trim();
+        String normalizedCoverPath = normalizeCoverPath(userId, coverPath);
         Tag existing = tagMapper.selectOne(new LambdaQueryWrapper<Tag>()
                 .eq(Tag::getName, normalized)
                 .last("limit 1"));
@@ -78,6 +80,7 @@ public class TagServiceImpl implements TagService {
         }
         Tag tag = new Tag();
         tag.setName(normalized);
+        tag.setCoverPath(normalizedCoverPath);
         tag.setCreatorUserId(userId);
         tag.setCreatedAt(LocalDateTime.now());
         tag.setUpdatedAt(LocalDateTime.now());
@@ -87,7 +90,7 @@ public class TagServiceImpl implements TagService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long userId, Long tagId, String newName) {
+    public void update(Long userId, Long tagId, String newName, String coverPath) {
         if (!StringUtils.hasText(newName)) {
             throw new BizException(400, "Tag name is required");
         }
@@ -106,6 +109,7 @@ public class TagServiceImpl implements TagService {
             throw new BizException(400, "Tag name already exists");
         }
         tag.setName(newName.trim());
+        tag.setCoverPath(normalizeCoverPath(userId, coverPath));
         tag.setUpdatedAt(LocalDateTime.now());
         tagMapper.updateById(tag);
     }
@@ -143,5 +147,17 @@ public class TagServiceImpl implements TagService {
         vo.setRelatedMaterials(materialList);
         vo.setRelatedNotes(noteList);
         return vo;
+    }
+
+    private String normalizeCoverPath(Long userId, String coverPath) {
+        if (!StringUtils.hasText(coverPath)) {
+            return null;
+        }
+        String cleaned = coverPath.replace('\\', '/').trim();
+        String expectedPrefix = "tag/" + userId + "/";
+        if (!cleaned.startsWith(expectedPrefix)) {
+            throw new BizException(400, "Invalid cover path");
+        }
+        return cleaned;
     }
 }

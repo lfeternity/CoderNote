@@ -17,6 +17,9 @@ public class Tag {
 
     private String name;
 
+    @TableField("cover_path")
+    private String coverPath;
+
     @TableField("creator_user_id")
     private Long creatorUserId;
 

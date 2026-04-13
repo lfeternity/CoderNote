@@ -8,9 +8,6 @@
       <div class="top-actions">
         <el-button type="warning" plain @click="onToggleFavorite">{{ detail.favorite ? '取消收藏' : '收藏' }}</el-button>
         <template v-if="canUseAiSummary">
-          <el-select v-model="summaryModel" style="width: 170px">
-            <el-option v-for="item in summaryModelOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
           <el-select v-model="summaryType" style="width: 132px">
             <el-option v-for="item in summaryTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
@@ -196,10 +193,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { getAiModels, summarizeByAi } from '../api/ai'
+import { summarizeByAi } from '../api/ai'
 import {
   deleteMaterial,
   favoriteMaterial,
@@ -208,7 +205,6 @@ import {
 } from '../api/material'
 import { addNote, getNoteList, linkMaterialNotes } from '../api/note'
 import { toZhLanguageLabel, toZhMaterialSourceLabel, toZhMaterialTypeLabel } from '../utils/material'
-import { AI_BUILTIN_MODEL, AI_PROVIDER_MODELS, getAiRuntimeConfig, setAiRuntimeConfig } from '../utils/aiRuntimeConfig'
 import AiMarkdownContent from '../components/ai/AiMarkdownContent.vue'
 
 const route = useRoute()
@@ -244,9 +240,6 @@ const summaryLoading = ref(false)
 const summaryError = ref('')
 const summaryResult = ref(null)
 const summaryExpanded = ref(false)
-const summaryModel = ref(getAiRuntimeConfig().model || AI_BUILTIN_MODEL)
-const summaryModelOptions = ref([{ value: 'SAFE_GPT_SIM', label: '安全增强模型' }])
-const summaryModelLoaded = ref(false)
 const lastSummaryPayload = ref(null)
 
 function resolveAiErrorMessage(err) {
@@ -431,39 +424,12 @@ async function confirmLinkNotes() {
   }
 }
 
-async function ensureSummaryModel() {
-  if (summaryModelLoaded.value) return
-  try {
-    const data = await getAiModels()
-    const options = Array.isArray(data?.models)
-      ? data.models
-        .map((item) => ({
-          value: item?.value ? String(item.value).trim() : '',
-          label: item?.label ? String(item.label).trim() : ''
-        }))
-        .filter((item) => item.value && item.label)
-      : []
-    if (options.length) {
-      summaryModelOptions.value = options
-    }
-    const runtimeModel = getAiRuntimeConfig().model
-    const hasRuntimeModel = runtimeModel && summaryModelOptions.value.some((item) => item.value === runtimeModel)
-    summaryModel.value = hasRuntimeModel
-      ? runtimeModel
-      : (data?.defaultModel || summaryModelOptions.value[0]?.value || summaryModel.value)
-    summaryModelLoaded.value = true
-  } catch (_) {
-    // ignore model loading failure
-  }
-}
-
 async function runAiSummary() {
   if (!canUseAiSummary.value) {
     ElMessage.warning('当前资料类型暂不支持 AI 总结')
     return
   }
 
-  await ensureSummaryModel()
   const payload = {
     targetType: 'MATERIAL',
     targetId: Number(route.params.materialId),
@@ -471,8 +437,7 @@ async function runAiSummary() {
     content: detail.content,
     language: detail.language,
     tagNames: detail.tagNames || [],
-    summaryType: summaryType.value,
-    model: summaryModel.value
+    summaryType: summaryType.value
   }
   lastSummaryPayload.value = payload
   summaryLoading.value = true
@@ -562,21 +527,6 @@ async function onDelete() {
 
 onMounted(() => {
   loadDetail()
-  ensureSummaryModel()
-})
-
-watch(summaryModel, (value) => {
-  const previous = getAiRuntimeConfig()
-  const model = String(value || AI_BUILTIN_MODEL).toUpperCase()
-  setAiRuntimeConfig({
-    ...previous,
-    model,
-    provider: AI_PROVIDER_MODELS.includes(model) ? model : previous.provider,
-    useCustomProvider: AI_PROVIDER_MODELS.includes(model) ? previous.useCustomProvider : false,
-    baseUrl: previous.baseUrl,
-    apiKey: previous.apiKey,
-    modelName: previous.modelName
-  }, { silent: true })
 })
 </script>
 
@@ -708,9 +658,9 @@ watch(summaryModel, (value) => {
 
 .ai-summary-card {
   margin-top: 14px;
-  border: 1px solid #dbe3ee;
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
-  background: #fbfdff;
+  background: var(--surface);
 }
 
 .ai-summary-head {
@@ -718,12 +668,12 @@ watch(summaryModel, (value) => {
   justify-content: space-between;
   align-items: center;
   padding: 10px 12px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .ai-summary-head h4 {
   margin: 0;
-  color: #1f3b7a;
+  color: var(--text-accent-strong);
 }
 
 .ai-summary-body {
@@ -731,10 +681,10 @@ watch(summaryModel, (value) => {
 }
 
 .ai-summary-error {
-  border: 1px solid #fecaca;
+  border: 1px solid rgba(181, 51, 51, 0.28);
   border-radius: 10px;
-  background: #fef2f2;
-  color: #b91c1c;
+  background: rgba(181, 51, 51, 0.1);
+  color: var(--danger);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -750,9 +700,9 @@ watch(summaryModel, (value) => {
 
 .mind-map-image {
   width: 100%;
-  border: 1px solid #dbe3ee;
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .ai-summary-actions {
@@ -785,21 +735,21 @@ watch(summaryModel, (value) => {
 }
 
 :global(:root[data-theme='dark']) .ai-summary-card {
-  background: #0f172a;
-  border-color: #334155;
+  background: #232320;
+  border-color: #3b3a35;
 }
 
 :global(:root[data-theme='dark']) .ai-summary-head {
-  border-bottom-color: #334155;
+  border-bottom-color: #3b3a35;
 }
 
 :global(:root[data-theme='dark']) .ai-summary-head h4 {
-  color: #dbeafe;
+  color: #faf9f5;
 }
 
 :global(:root[data-theme='dark']) .mind-map-image {
-  border-color: #334155;
-  background: #111827;
+  border-color: #3b3a35;
+  background: #1c1c1a;
 }
 
 @media (max-width: 1100px) {
@@ -824,4 +774,3 @@ watch(summaryModel, (value) => {
 }
 
 </style>
-

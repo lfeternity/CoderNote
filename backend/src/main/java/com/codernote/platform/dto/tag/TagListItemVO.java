@@ -6,6 +6,7 @@ import lombok.Data;
 public class TagListItemVO {
     private Long id;
     private String name;
+    private String coverPath;
     private Long usageCount;
     private Boolean canEdit;
     private Boolean canDelete;

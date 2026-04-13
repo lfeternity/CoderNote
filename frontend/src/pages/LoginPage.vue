@@ -3,91 +3,115 @@
     <PublicTopNav />
 
     <section class="auth-stage">
-      <div class="bg-layer" aria-hidden="true">
-        <span class="halo halo-a" />
-        <span class="halo halo-b" />
-        <span class="halo halo-c" />
-        <span class="trace trace-a" />
-        <span class="trace trace-b" />
-      </div>
-
-      <div class="auth-layout">
-        <aside class="surface-card intro-card fade-in">
-          <p class="eyebrow">WELCOME BACK</p>
-          <h2>继续你的编程复盘</h2>
-          <p class="intro-text">
-            登录后即可回到你的学习轨道，快速查看错题管理、资料联动与个人复习进度。
-          </p>
-
-          <div class="chip-row">
-            <span># 错题追踪</span>
-            <span># 标签联动</span>
-            <span># 复习节奏</span>
-          </div>
-
-          <div class="stat-grid">
-            <article class="stat-item">
-              <strong>Tag Link</strong>
-              <p>知识点自动关联资料</p>
-            </article>
-            <article class="stat-item">
-              <strong>Review</strong>
-              <p>持续积累复习轨迹</p>
-            </article>
-          </div>
-        </aside>
-
-        <div class="surface-card form-card fade-in">
-          <div class="card-decor" aria-hidden="true" />
-          <h2>登录</h2>
-          <el-form ref="formRef" :model="form" :rules="rules" label-width="86px">
-            <el-form-item label="昵称" prop="nickname">
-              <el-input v-model="form.nickname" />
-            </el-form-item>
-            <el-form-item label="密码" prop="password">
-              <el-input v-model="form.password" type="password" show-password />
-            </el-form-item>
-            <el-form-item label="验证码" prop="captchaCode">
-              <div class="captcha-row">
-                <el-input
-                  v-model="form.captchaCode"
-                  maxlength="8"
-                  placeholder="请输入右侧图形验证码"
-                />
-                <img
-                  class="captcha-image"
-                  :src="captchaImage"
-                  alt="验证码"
-                  title="点击刷新验证码"
-                  @click="loadCaptcha"
-                >
-                <el-button class="captcha-refresh" native-type="button" @click="loadCaptcha">换一张</el-button>
-              </div>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" :loading="loading" @click="onSubmit">登录</el-button>
-              <el-button @click="$router.push('/register')">没有账号？去注册</el-button>
-            </el-form-item>
-          </el-form>
-
-          <div class="oauth-divider">
-            <span>其他登录方式</span>
-          </div>
-
-          <div class="oauth-grid">
-            <button
-              v-for="item in oauthPlatforms"
-              :key="item.code"
-              class="oauth-button"
-              type="button"
-              :style="{ '--brand': item.color }"
-              @click="onOauthLogin(item)"
-            >
-              <span class="oauth-icon">{{ item.icon }}</span>
-              <span>{{ item.label }}登录</span>
-            </button>
-          </div>
+      <aside class="surface-card intro-card fade-in">
+        <p class="intro-overline">Welcome Back</p>
+        <h2>回到你的学习现场。</h2>
+        <p class="intro-text">
+          登录后继续管理错题、资料和笔记，并在复习中心跟踪每日学习节奏。
+        </p>
+        <div class="intro-chips">
+          <span>错题复盘</span>
+          <span>标签联动</span>
+          <span>复习调度</span>
         </div>
+
+        <section class="intro-decoration" aria-hidden="true">
+          <div class="decoration-head">
+            <span>Learning Rhythm</span>
+            <strong>7-Day Focus</strong>
+          </div>
+          <ul class="decoration-list">
+            <li><i></i><span>记录错题上下文与解法</span></li>
+            <li><i></i><span>按标签聚合资料与笔记</span></li>
+            <li><i></i><span>按日推进复习优先级</span></li>
+          </ul>
+          <div class="decoration-grid">
+            <article>
+              <p>待复习</p>
+              <strong>12</strong>
+            </article>
+            <article>
+              <p>已沉淀</p>
+              <strong>31</strong>
+            </article>
+            <article>
+              <p>掌握率</p>
+              <strong>89%</strong>
+            </article>
+          </div>
+        </section>
+      </aside>
+
+      <div class="surface-card form-card fade-in">
+        <h2>登录</h2>
+        <el-form ref="formRef" :model="form" :rules="rules" label-width="86px">
+          <el-form-item label="昵称" prop="nickname">
+            <el-input v-model="form.nickname" />
+          </el-form-item>
+          <el-form-item label="密码" prop="password">
+            <el-input v-model="form.password" type="password" show-password />
+          </el-form-item>
+          <el-form-item label="验证码" prop="captchaCode">
+            <div class="captcha-row">
+              <el-input
+                v-model="form.captchaCode"
+                maxlength="8"
+                placeholder="请输入右侧图形验证码"
+              />
+              <img
+                class="captcha-image"
+                :src="captchaImage"
+                alt="验证码"
+                title="点击刷新验证码"
+                @click="loadCaptcha"
+              >
+              <el-button class="captcha-refresh" native-type="button" @click="loadCaptcha">换一张</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" :loading="loading" @click="onSubmit">登录</el-button>
+            <el-button @click="$router.push('/register')">没有账号？去注册</el-button>
+          </el-form-item>
+        </el-form>
+
+        <div class="oauth-divider">
+          <span>其他登录方式</span>
+        </div>
+
+        <div class="oauth-grid">
+          <button
+            v-for="item in oauthPlatforms"
+            :key="item.code"
+            class="oauth-button"
+            type="button"
+            :style="{ '--brand': item.color }"
+            @click="onOauthLogin(item)"
+          >
+            <span class="oauth-icon">{{ item.icon }}</span>
+            <span>{{ item.label }} 登录</span>
+          </button>
+        </div>
+
+        <section class="form-decoration" aria-hidden="true">
+          <div class="form-decoration-head">
+            <span>After Sign In</span>
+            <strong>继续今天的学习章节</strong>
+          </div>
+          <div class="form-decoration-row">
+            <article>
+              <p>错题管理</p>
+              <small>复盘重点与解法差异</small>
+            </article>
+            <article>
+              <p>标签库</p>
+              <small>一键定位关联知识点</small>
+            </article>
+            <article>
+              <p>复习中心</p>
+              <small>按优先级持续推进计划</small>
+            </article>
+          </div>
+        </section>
       </div>
     </section>
   </div>
@@ -163,7 +187,7 @@ function onSubmit() {
       ElMessage.success('登录成功')
       const redirect = route.query.redirect || '/error-question/list'
       router.push(redirect)
-    } catch (error) {
+    } catch (_) {
       await loadCaptcha()
     } finally {
       loading.value = false
@@ -173,215 +197,171 @@ function onSubmit() {
 </script>
 
 <style scoped>
-:deep(.public-nav) {
-  width: calc(100% - 32px);
-  max-width: none;
-  margin: 10px 16px 0;
-  border: 0;
-  box-shadow: none;
-  background: transparent;
-}
 .auth-shell {
-  position: relative;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: linear-gradient(160deg, #f4f8ff 0%, #ebf1fd 55%, #e4ebf8 100%);
+  position: relative;
+  padding-bottom: clamp(18px, 2vw, 28px);
 }
 
 .auth-shell::before {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(125deg, rgba(255, 255, 255, 0.86), rgba(240, 246, 255, 0.65)),
-    url('../assets/home-tech-bg.svg') center/cover no-repeat;
-  opacity: 0.42;
   pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(201, 100, 66, 0.08), rgba(201, 100, 66, 0) 32%),
+    radial-gradient(circle at 84% 30%, rgba(98, 124, 101, 0.07), rgba(98, 124, 101, 0) 30%);
 }
 
 .auth-stage {
   position: relative;
   z-index: 1;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 18px 20px 34px;
-}
-
-.bg-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.halo {
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(1px);
-}
-
-.halo-a {
-  width: 360px;
-  height: 360px;
-  left: -70px;
-  top: 80px;
-  background: radial-gradient(circle, rgba(30, 64, 175, 0.2), rgba(30, 64, 175, 0));
-  animation: floatHalo 8s ease-in-out infinite;
-}
-
-.halo-b {
-  width: 280px;
-  height: 280px;
-  right: -40px;
-  top: 160px;
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.2), rgba(14, 165, 233, 0));
-  animation: floatHalo 7.1s ease-in-out infinite reverse;
-}
-
-.halo-c {
-  width: 260px;
-  height: 260px;
-  right: 24%;
-  bottom: -90px;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.16), rgba(16, 185, 129, 0));
-  animation: floatHalo 9s ease-in-out infinite;
-}
-
-.trace {
-  position: absolute;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.4), transparent);
-}
-
-.trace-a {
-  width: 360px;
-  left: 18%;
-  top: 190px;
-}
-
-.trace-b {
-  width: 320px;
-  right: 12%;
-  bottom: 180px;
-}
-
-.auth-layout {
-  width: min(1240px, 100%);
-  margin: 0 auto;
+  width: calc(100% - clamp(20px, 3vw, 56px));
+  margin: clamp(12px, 1.2vw, 20px) auto 0;
+  min-height: calc(100vh - 116px);
   display: grid;
-  grid-template-columns: minmax(280px, 0.9fr) minmax(460px, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(300px, 0.9fr) minmax(450px, 1fr);
+  gap: clamp(12px, 1.3vw, 18px);
   align-items: stretch;
 }
 
 .intro-card {
-  position: relative;
-  overflow: hidden;
-  padding: 28px 24px;
-  border: 1px solid #c7d8ff;
-  background: linear-gradient(170deg, rgba(255, 255, 255, 0.9), rgba(243, 248, 255, 0.82));
+  padding: 24px 22px;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.intro-card::after {
-  content: '';
-  position: absolute;
-  width: 180px;
-  height: 180px;
-  right: -55px;
-  top: -55px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(30, 64, 175, 0.2), rgba(30, 64, 175, 0));
-}
-
-.eyebrow {
+.intro-overline {
   margin: 0;
-  font-size: 12px;
+  font-size: 10px;
+  text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #2f5fd4;
-  font-weight: 700;
+  color: var(--text-sub);
 }
 
 .intro-card h2 {
-  margin: 10px 0 12px;
-  color: #173f9f;
-  font-size: clamp(24px, 2.2vw, 30px);
+  margin-top: 10px;
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 1.16;
 }
 
 .intro-text {
-  margin: 0;
-  color: #425985;
-  line-height: 1.8;
+  margin-top: 12px;
+  color: var(--text-sub);
 }
 
-.chip-row {
-  margin-top: 16px;
+.intro-chips {
+  margin-top: 14px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.chip-row span {
+.intro-chips span {
   display: inline-flex;
   align-items: center;
-  padding: 6px 10px;
+  min-height: 28px;
+  padding: 0 11px;
   border-radius: 999px;
-  border: 1px solid #c7d8ff;
-  background: rgba(255, 255, 255, 0.72);
-  color: #2c50b0;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-soft);
+  color: var(--text-accent);
   font-size: 12px;
 }
 
-.stat-grid {
-  margin-top: 16px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.intro-decoration {
+  margin-top: auto;
+  border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-soft) 72%, var(--surface));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--border-soft) 76%, transparent);
+  padding: 14px 14px 12px;
+}
+
+.decoration-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 10px;
 }
 
-.stat-item {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid #d3e0ff;
-  background: rgba(248, 251, 255, 0.86);
+.decoration-head span {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-sub);
 }
 
-.stat-item strong {
-  color: #2849a5;
+.decoration-head strong {
+  color: var(--text-accent-strong);
+  font-size: 14px;
+  font-family: var(--font-mono);
+}
+
+.decoration-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+}
+
+.decoration-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-accent);
   font-size: 13px;
 }
 
-.stat-item p {
-  margin: 6px 0 0;
-  color: #5770a7;
-  font-size: 12px;
+.decoration-list li i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 84%, var(--surface-soft));
+  box-shadow: 0 0 0 4px rgba(201, 100, 66, 0.11);
+}
+
+.decoration-grid {
+  margin-top: 11px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.decoration-grid article {
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface) 88%, var(--surface-soft));
+  padding: 8px 9px;
+}
+
+.decoration-grid p {
+  margin: 0;
+  color: var(--text-sub);
+  font-size: 11px;
+}
+
+.decoration-grid strong {
+  margin-top: 4px;
+  display: block;
+  color: var(--text-accent-strong);
+  font-size: 18px;
+  font-family: var(--font-serif);
+  line-height: 1;
 }
 
 .form-card {
-  position: relative;
-  overflow: hidden;
-  padding: 26px 28px;
-  border: 1px solid #bfd2fb;
-  background: linear-gradient(175deg, rgba(255, 255, 255, 0.95), rgba(245, 249, 255, 0.92));
-}
-
-.card-decor {
-  position: absolute;
-  width: 220px;
-  height: 220px;
-  right: -88px;
-  top: -110px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(45, 92, 232, 0.2), rgba(45, 92, 232, 0));
-  pointer-events: none;
+  padding: 24px 24px 20px;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .form-card h2 {
-  margin: 0 0 18px;
-  color: var(--primary);
+  font-size: clamp(30px, 3vw, 40px);
+  margin-bottom: 12px;
 }
 
 .captcha-row {
@@ -398,24 +378,20 @@ function onSubmit() {
 .captcha-image {
   width: 120px;
   height: 40px;
-  border: 1px solid #c8d6ef;
-  border-radius: 8px;
-  background: #f5f9ff;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--surface);
   cursor: pointer;
   object-fit: cover;
 }
 
 .captcha-refresh {
   height: 40px;
-  border-radius: 8px;
-}
-
-.form-card :deep(.el-form-item:last-child) {
-  margin-bottom: 0;
+  border-radius: 10px;
 }
 
 .oauth-divider {
-  margin: 16px 0 12px;
+  margin: 14px 0 12px;
   position: relative;
   text-align: center;
 }
@@ -426,14 +402,14 @@ function onSubmit() {
   left: 0;
   right: 0;
   top: 50%;
-  border-top: 1px solid #d6e1f8;
+  border-top: 1px solid var(--border-soft);
 }
 
 .oauth-divider span {
   position: relative;
-  padding: 0 10px;
-  background: linear-gradient(175deg, rgba(255, 255, 255, 0.95), rgba(245, 249, 255, 0.92));
-  color: #5d6f95;
+  padding: 0 12px;
+  background: var(--surface);
+  color: var(--text-sub);
   font-size: 13px;
 }
 
@@ -443,13 +419,71 @@ function onSubmit() {
   gap: 10px;
 }
 
+.form-decoration {
+  margin-top: auto;
+  border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface) 70%, var(--surface-soft));
+  padding: 12px;
+}
+
+.form-decoration-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.form-decoration-head span {
+  color: var(--text-sub);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.form-decoration-head strong {
+  color: var(--text-accent-strong);
+  font-size: 14px;
+  font-family: var(--font-serif);
+}
+
+.form-decoration-row {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.form-decoration-row article {
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  padding: 9px;
+}
+
+.form-decoration-row p {
+  margin: 0;
+  color: var(--text-accent-strong);
+  font-size: 13px;
+  font-family: var(--font-serif);
+  line-height: 1.2;
+}
+
+.form-decoration-row small {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-sub);
+  line-height: 1.4;
+  font-size: 12px;
+}
+
 .oauth-button {
-  height: 44px;
+  height: 42px;
   border-radius: 10px;
   border: 1px solid var(--brand);
-  background: #ffffff;
+  background: var(--surface);
   color: var(--brand);
-  font-weight: 700;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -459,13 +493,13 @@ function onSubmit() {
 }
 
 .oauth-button:hover {
-  transform: scale(1.03);
-  box-shadow: 0 10px 18px rgba(30, 64, 175, 0.16);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(20, 20, 19, 0.1);
 }
 
 .oauth-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 999px;
   background: var(--brand);
   color: #fff;
@@ -473,71 +507,35 @@ function onSubmit() {
   align-items: center;
   justify-content: center;
   font-size: 11px;
-  letter-spacing: 0.01em;
-}
-
-@keyframes floatHalo {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-12px);
-  }
 }
 
 @media (max-width: 1024px) {
   .auth-stage {
-    padding: 12px 14px 24px;
-    align-items: flex-start;
-  }
-
-  .auth-layout {
+    width: calc(100% - 16px);
+    margin-top: 10px;
+    min-height: auto;
     grid-template-columns: 1fr;
   }
 
-  .intro-card {
-    order: 2;
-  }
-
-  .form-card {
-    order: 1;
+  .intro-decoration,
+  .form-decoration {
+    margin-top: 14px;
   }
 }
 
 @media (max-width: 640px) {
-  :deep(.public-nav) {
-    width: calc(100% - 16px);
-    margin: 8px 8px 0;
-  }
-
-  .auth-stage {
-    padding: 8px 8px 16px;
-  }
-
-  .form-card,
-  .intro-card {
-    padding: 18px 14px;
+  .intro-card,
+  .form-card {
+    padding: 16px 14px;
   }
 
   .captcha-row {
     flex-wrap: wrap;
   }
 
-  .captcha-image,
-  .captcha-refresh {
-    height: 36px;
-  }
-
-  .captcha-image {
-    width: 108px;
-  }
-
-  .stat-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .oauth-grid {
+  .oauth-grid,
+  .decoration-grid,
+  .form-decoration-row {
     grid-template-columns: 1fr;
   }
 }

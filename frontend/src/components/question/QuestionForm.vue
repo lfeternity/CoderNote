@@ -44,7 +44,7 @@
         </el-select>
       </el-form-item>
 
-      <el-form-item label="错误题目" prop="errorCode">
+      <el-form-item label="错误题目" prop="errorCode" required>
         <el-input v-model="form.errorCode" type="textarea" :rows="5" placeholder="可填写代码或文字" />
         <div class="upload-wrap">
           <el-upload
@@ -68,7 +68,7 @@
         <el-input v-model="form.errorReason" type="textarea" :rows="3" />
       </el-form-item>
 
-      <el-form-item label="正确方案" prop="correctCode">
+      <el-form-item label="正确方案" prop="correctCode" required>
         <el-input v-model="form.correctCode" type="textarea" :rows="5" placeholder="可填写代码或文字" />
         <div class="upload-wrap">
           <el-upload
@@ -759,21 +759,21 @@ onBeforeUnmount(() => {
   right: 96px;
   top: 52%;
   transform: translateY(-50%);
-  border: 1px solid rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(255, 236, 222, 0.78);
   border-radius: 999px;
   padding: 10px 18px;
   background:
     radial-gradient(circle at 28% 22%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.4) 34%, rgba(255, 255, 255, 0) 60%),
-    linear-gradient(145deg, #a6e6ff 0%, #7acfff 48%, #50a8f0 100%);
-  color: #f7fcff;
+    linear-gradient(145deg, #df9b7f 0%, #c9704f 48%, #b65a3b 100%);
+  color: #fffaf6;
   font-weight: 600;
   letter-spacing: 0.3px;
-  text-shadow: 0 1px 2px rgba(24, 83, 146, 0.35);
+  text-shadow: 0 1px 2px rgba(67, 33, 20, 0.38);
   cursor: pointer;
   box-shadow:
     inset 0 2px 6px rgba(255, 255, 255, 0.55),
-    inset 0 -10px 14px rgba(50, 121, 197, 0.24),
-    0 12px 24px rgba(58, 146, 224, 0.26);
+    inset 0 -10px 14px rgba(146, 79, 51, 0.24),
+    0 12px 24px rgba(57, 33, 22, 0.26);
   overflow: hidden;
   isolation: isolate;
   z-index: 310;
@@ -797,19 +797,19 @@ onBeforeUnmount(() => {
   transform: translateY(calc(-50% - 1px));
   box-shadow:
     inset 0 2px 7px rgba(255, 255, 255, 0.62),
-    inset 0 -10px 16px rgba(45, 112, 186, 0.3),
-    0 16px 30px rgba(44, 132, 210, 0.3);
+    inset 0 -10px 16px rgba(126, 68, 43, 0.3),
+    0 16px 30px rgba(44, 25, 17, 0.3);
   filter: saturate(1.05);
 }
 
 :global(:root[data-theme='dark']) .ai-float-btn {
-  border-color: rgba(182, 220, 255, 0.42);
+  border-color: rgba(241, 196, 172, 0.42);
   background:
-    radial-gradient(circle at 30% 20%, rgba(224, 241, 255, 0.36) 0%, rgba(224, 241, 255, 0.08) 38%, rgba(224, 241, 255, 0) 60%),
-    linear-gradient(145deg, #3a658f 0%, #335a89 48%, #2b4c78 100%);
+    radial-gradient(circle at 30% 20%, rgba(247, 224, 210, 0.36) 0%, rgba(247, 224, 210, 0.08) 38%, rgba(247, 224, 210, 0) 60%),
+    linear-gradient(145deg, #73412d 0%, #6a3a29 48%, #572f20 100%);
   box-shadow:
-    inset 0 2px 5px rgba(210, 231, 255, 0.24),
-    inset 0 -8px 12px rgba(9, 26, 47, 0.48),
+    inset 0 2px 5px rgba(245, 222, 207, 0.24),
+    inset 0 -8px 12px rgba(41, 21, 14, 0.48),
     0 12px 26px rgba(0, 0, 0, 0.42);
 }
 
@@ -819,10 +819,10 @@ onBeforeUnmount(() => {
 
 .attachment-list {
   margin-top: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   padding: 8px 10px;
-  background: #fafbff;
+  background: var(--surface-soft);
 }
 
 .attachment-item {
@@ -870,9 +870,9 @@ onBeforeUnmount(() => {
   bottom: 16px;
   padding: 6px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid rgba(193, 185, 170, 0.5);
   background: rgba(255, 255, 255, 0.94);
-  color: #94a3b8;
+  color: var(--text-sub);
   font-size: 12px;
   line-height: 1.2;
   z-index: 320;
@@ -901,9 +901,9 @@ onBeforeUnmount(() => {
 }
 
 :global(:root[data-theme='dark']) .draft-status-tip {
-  background: rgba(15, 23, 42, 0.94);
-  border-color: rgba(100, 116, 139, 0.5);
-  color: #94a3b8;
+  background: rgba(30, 30, 27, 0.94);
+  border-color: rgba(97, 97, 90, 0.5);
+  color: #b0aea5;
 }
 
 @media (max-width: 1200px) {

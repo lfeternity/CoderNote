@@ -52,10 +52,18 @@
       </div>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? '新增标签' : '编辑标签'" width="420px">
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? '新增标签' : '编辑标签'" width="520px">
       <el-form :model="dialogForm" label-width="90px">
         <el-form-item label="标签名称">
           <el-input v-model="dialogForm.name" placeholder="请输入标签名" />
+        </el-form-item>
+        <el-form-item label="标签封面">
+          <CoverPicker
+            v-model="dialogForm.coverPath"
+            biz-type="tag"
+            preview-label="标签封面预览"
+            default-cover-image="/biaoqian.png"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -70,9 +78,11 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import CoverPicker from '../components/common/CoverPicker.vue'
 import { addTag, deleteTag, getTagList, updateTag } from '../api/tag'
-import { getBookshelfSeed, resolveBookshelfTheme } from '../utils/bookshelf'
-import defaultCoverImage from '../assets/default-bookshelf-cover.svg'
+import { buildCoverPreviewUrl, getBookshelfSeed, resolveBookshelfTheme } from '../utils/bookshelf'
+
+const DEFAULT_TAG_COVER = '/biaoqian.png'
 
 const router = useRouter()
 const loading = ref(false)
@@ -81,16 +91,17 @@ const rows = ref([])
 const dialogVisible = ref(false)
 const dialogMode = ref('add')
 const currentTagId = ref(null)
-const dialogForm = reactive({ name: '' })
+const dialogForm = reactive({ name: '', coverPath: '' })
 
 function coverVars(row) {
   const seed = getBookshelfSeed(row, row.name || '标签')
   const theme = resolveBookshelfTheme(seed)
+  const coverImage = row.coverPath ? buildCoverPreviewUrl(row.coverPath, 'tag-cover') : DEFAULT_TAG_COVER
   return {
     '--book-main': theme.main,
     '--book-soft': theme.soft,
     '--cover-gradient': theme.gradient,
-    '--cover-image': `url("${defaultCoverImage}")`
+    '--cover-image': `url("${coverImage}")`
   }
 }
 
@@ -111,6 +122,7 @@ function openAddDialog() {
   dialogMode.value = 'add'
   currentTagId.value = null
   dialogForm.name = ''
+  dialogForm.coverPath = ''
   dialogVisible.value = true
 }
 
@@ -119,6 +131,7 @@ function openEditDialog(row) {
   dialogMode.value = 'edit'
   currentTagId.value = row.id
   dialogForm.name = row.name
+  dialogForm.coverPath = row.coverPath || ''
   dialogVisible.value = true
 }
 
@@ -129,11 +142,16 @@ async function submitDialog() {
     return
   }
 
+  const payload = {
+    name,
+    coverPath: dialogForm.coverPath || ''
+  }
+
   if (dialogMode.value === 'add') {
-    await addTag({ name })
+    await addTag(payload)
     ElMessage.success('标签新增成功')
   } else {
-    await updateTag(currentTagId.value, { name })
+    await updateTag(currentTagId.value, payload)
     ElMessage.success('标签编辑成功')
   }
 
@@ -207,9 +225,9 @@ h2 {
 
 .tag-usage-label {
   border-radius: 999px;
-  border: 1px solid rgba(219, 240, 255, 0.55);
-  background: rgba(6, 18, 38, 0.32);
-  color: #dff2ff;
+  border: 1px solid rgba(255, 229, 212, 0.56);
+  background: rgba(55, 33, 24, 0.32);
+  color: #fff2e6;
   padding: 1px 7px;
   font-size: 11px;
   line-height: 1.2;
@@ -217,11 +235,11 @@ h2 {
 }
 
 .tag-usage-count {
-  color: rgba(220, 237, 255, 0.95);
+  color: rgba(255, 232, 218, 0.95);
   font-size: 13px;
   line-height: 1.2;
   font-weight: 600;
-  text-shadow: 0 2px 8px rgba(8, 22, 48, 0.54);
+  text-shadow: 0 2px 8px rgba(35, 22, 16, 0.54);
 }
 
 .tag-hover-actions {

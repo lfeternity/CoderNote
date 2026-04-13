@@ -67,11 +67,11 @@ function onImageError() {
 <style scoped>
 .user-avatar {
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 10px 24px rgba(30, 64, 175, 0.18);
+  border: 2px solid rgba(250, 249, 245, 0.96);
+  box-shadow: 0 8px 20px rgba(20, 20, 19, 0.15);
   overflow: hidden;
-  background: linear-gradient(135deg, #2f73ea 0%, #1e40af 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #d07a59 0%, #b85e3e 100%);
+  color: #fffdf9;
   display: inline-flex;
   align-items: center;
   justify-content: center;

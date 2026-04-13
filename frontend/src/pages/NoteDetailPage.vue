@@ -12,9 +12,6 @@
       </div>
       <div class="actions-wrap">
         <div class="actions">
-          <el-select v-model="summaryModel" style="width: 170px">
-            <el-option v-for="item in summaryModelOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
           <el-select v-model="summaryType" style="width: 132px">
             <el-option v-for="item in summaryTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
@@ -311,7 +308,7 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Clock } from '@element-plus/icons-vue'
-import { getAiModels, summarizeByAi } from '../api/ai'
+import { summarizeByAi } from '../api/ai'
 import {
   addNote,
   buildNoteSingleExportPdfUrl,
@@ -327,8 +324,7 @@ import {
 } from '../api/note'
 import { upsertReviewPlan } from '../api/review'
 import { toZhLanguageLabel, toZhMaterialTypeLabel } from '../utils/material'
-import { AI_BUILTIN_MODEL, AI_PROVIDER_MODELS, getAiRuntimeConfig, setAiRuntimeConfig } from '../utils/aiRuntimeConfig'
-import { renderMarkdownSafe } from '../utils/markdown'
+import { renderNoteContent } from '../utils/noteContent'
 import { normalizeReviewDates, reviewStatusLabel } from '../utils/review'
 import { buildSideBySideDiff } from '../utils/textDiff'
 import AiMarkdownContent from '../components/ai/AiMarkdownContent.vue'
@@ -352,7 +348,7 @@ const detail = reactive({
 })
 
 const languageLabel = computed(() => toZhLanguageLabel(detail.language) || '-')
-const contentHtml = computed(() => renderMarkdownSafe(detail.content))
+const contentHtml = computed(() => renderNoteContent(detail.content))
 const inReviewPlan = computed(() => !!detail.inReviewPlan)
 
 const summaryType = ref('CORE_EXTRACT')
@@ -366,9 +362,6 @@ const summaryLoading = ref(false)
 const summaryError = ref('')
 const summaryResult = ref(null)
 const summaryExpanded = ref(false)
-const summaryModel = ref(getAiRuntimeConfig().model || AI_BUILTIN_MODEL)
-const summaryModelOptions = ref([{ value: 'SAFE_GPT_SIM', label: '安全增强模型' }])
-const summaryModelsLoaded = ref(false)
 const lastSummaryPayload = ref(null)
 
 const manualPlanDialogVisible = ref(false)
@@ -380,7 +373,7 @@ const versionDetailLoading = ref(false)
 const versionList = ref([])
 const selectedVersionId = ref(null)
 const selectedVersionDetail = ref(null)
-const selectedVersionContentHtml = computed(() => renderMarkdownSafe(selectedVersionDetail.value?.content || ''))
+const selectedVersionContentHtml = computed(() => renderNoteContent(selectedVersionDetail.value?.content || ''))
 const compareVersionIds = ref([])
 const compareMode = ref('NONE')
 const comparePair = reactive({ left: null, right: null })
@@ -415,27 +408,7 @@ async function loadDetail() {
   }
 }
 
-async function ensureSummaryModel() {
-  if (summaryModelsLoaded.value) return
-  try {
-    const data = await getAiModels()
-    const options = Array.isArray(data?.models)
-      ? data.models
-        .map((item) => ({ value: String(item?.value || '').trim(), label: String(item?.label || '').trim() }))
-        .filter((item) => item.value && item.label)
-      : []
-    if (options.length) summaryModelOptions.value = options
-    const runtimeModel = getAiRuntimeConfig().model
-    const hasRuntimeModel = runtimeModel && summaryModelOptions.value.some((item) => item.value === runtimeModel)
-    summaryModel.value = hasRuntimeModel
-      ? runtimeModel
-      : (data?.defaultModel || summaryModelOptions.value[0]?.value || summaryModel.value)
-    summaryModelsLoaded.value = true
-  } catch (_) {}
-}
-
 async function runAiSummary() {
-  await ensureSummaryModel()
   const payload = {
     targetType: 'NOTE',
     targetId: Number(route.params.noteId),
@@ -443,8 +416,7 @@ async function runAiSummary() {
     content: detail.content,
     language: detail.language,
     tagNames: detail.tagNames || [],
-    summaryType: summaryType.value,
-    model: summaryModel.value
+    summaryType: summaryType.value
   }
   lastSummaryPayload.value = payload
   summaryLoading.value = true
@@ -721,7 +693,6 @@ function scrollToDiffRow(rowIndex) {
 
 onMounted(() => {
   loadDetail()
-  ensureSummaryModel()
 })
 
 watch(historyDrawerVisible, (visible) => {
@@ -730,19 +701,6 @@ watch(historyDrawerVisible, (visible) => {
   closeCompare()
 })
 
-watch(summaryModel, (value) => {
-  const previous = getAiRuntimeConfig()
-  const model = String(value || AI_BUILTIN_MODEL).toUpperCase()
-  setAiRuntimeConfig({
-    ...previous,
-    model,
-    provider: AI_PROVIDER_MODELS.includes(model) ? model : previous.provider,
-    useCustomProvider: AI_PROVIDER_MODELS.includes(model) ? previous.useCustomProvider : false,
-    baseUrl: previous.baseUrl,
-    apiKey: previous.apiKey,
-    modelName: previous.modelName
-  }, { silent: true })
-})
 </script>
 
 <style scoped>
@@ -782,7 +740,7 @@ watch(summaryModel, (value) => {
 .markdown-body :deep(p) { margin: 8px 0; }
 .markdown-body :deep(ul),.markdown-body :deep(ol) { margin: 8px 0; padding-left: 20px; }
 .markdown-body :deep(code) {
-  background: rgba(122, 162, 255, 0.18);
+  background: rgba(201, 100, 66, 0.15);
   border-radius: 4px;
   padding: 2px 6px;
   color: var(--text-main);
@@ -791,29 +749,29 @@ watch(summaryModel, (value) => {
 .markdown-body :deep(.md-code) {
   margin: 10px 0;
   padding: 10px;
-  background: #1f2937;
-  color: #f8fafc;
+  background: #232320;
+  color: #faf9f5;
   border-radius: 8px;
   overflow-x: auto;
 }
 .markdown-body :deep(.md-code code) { background: transparent; padding: 0; color: inherit; }
 
-.ai-summary-card { margin-top: 14px; border: 1px solid #dbe3ee; border-radius: 12px; background: #fbfdff; }
-.ai-summary-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
-.ai-summary-head h4 { margin: 0; color: #1f3b7a; }
+.ai-summary-card { margin-top: 14px; border: 1px solid var(--border-soft); border-radius: 12px; background: var(--surface); }
+.ai-summary-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border-soft); }
+.ai-summary-head h4 { margin: 0; color: var(--text-accent-strong); }
 .ai-summary-body { padding: 12px; }
 .ai-summary-error {
-  border: 1px solid #fecaca;
+  border: 1px solid rgba(181, 51, 51, 0.28);
   border-radius: 10px;
-  background: #fef2f2;
-  color: #b91c1c;
+  background: rgba(181, 51, 51, 0.1);
+  color: var(--danger);
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 8px 10px;
 }
 .mind-map-box { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
-.mind-map-image { width: 100%; border: 1px solid #dbe3ee; border-radius: 10px; background: #fff; }
+.mind-map-image { width: 100%; border: 1px solid var(--border-soft); border-radius: 10px; background: var(--surface); }
 .ai-summary-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
 
 :deep(.note-version-drawer .el-drawer__body) { padding: 14px 16px; }
@@ -844,8 +802,8 @@ watch(summaryModel, (value) => {
   transition: all 0.2s ease;
 }
 .version-item + .version-item { margin-top: 8px; }
-.version-item:hover { border-color: #95b4f7; }
-.version-item.active { border-color: #5d87ef; box-shadow: 0 6px 20px rgba(30, 64, 175, 0.12); }
+.version-item:hover { border-color: rgba(201, 100, 66, 0.42); }
+.version-item.active { border-color: rgba(201, 100, 66, 0.58); box-shadow: 0 6px 20px rgba(20, 20, 19, 0.12); }
 .version-item-title { display: flex; flex-direction: column; gap: 2px; }
 .version-item-title strong { color: var(--text-accent-strong); }
 .version-item-title span,.version-item-main small { color: var(--text-sub); font-size: 12px; }
@@ -893,10 +851,10 @@ watch(summaryModel, (value) => {
 .preview-pane h5 { margin: 14px 0 8px; color: var(--text-accent-strong); }
 .preview-content { max-height: 460px; overflow: auto; }
 
-:global(:root[data-theme='dark']) .ai-summary-card { background: #0f172a; border-color: #334155; }
-:global(:root[data-theme='dark']) .ai-summary-head { border-bottom-color: #334155; }
-:global(:root[data-theme='dark']) .ai-summary-head h4 { color: #dbeafe; }
-:global(:root[data-theme='dark']) .mind-map-image { border-color: #334155; background: #111827; }
+:global(:root[data-theme='dark']) .ai-summary-card { background: #232320; border-color: #3b3a35; }
+:global(:root[data-theme='dark']) .ai-summary-head { border-bottom-color: #3b3a35; }
+:global(:root[data-theme='dark']) .ai-summary-head h4 { color: #faf9f5; }
+:global(:root[data-theme='dark']) .mind-map-image { border-color: #3b3a35; background: #1c1c1a; }
 
 @media (max-width: 1100px) {
   .detail-grid { grid-template-columns: 1fr; }
@@ -906,4 +864,3 @@ watch(summaryModel, (value) => {
   .version-layout { grid-template-columns: 1fr; }
 }
 </style>
-

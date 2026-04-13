@@ -6,7 +6,9 @@
       <div class="surface-card oauth-card fade-in">
         <p class="platform-chip">{{ pending.platformName || '第三方平台' }} 登录</p>
         <h2>欢迎使用 {{ pending.platformName || '第三方账号' }} 登录</h2>
-        <p class="desc">当前账号尚未绑定 CoderNote，请先绑定已有账号或自动创建新账号。</p>
+        <p class="desc">
+          当前账号尚未绑定 CoderNote，请先绑定已有账号，或自动创建新账号继续。
+        </p>
 
         <div class="profile-preview">
           <img v-if="pending.avatarUrl" :src="pending.avatarUrl" alt="平台头像">
@@ -109,7 +111,7 @@ async function loadPending() {
     if (!autoForm.nickname) {
       autoForm.nickname = data?.nickname || ''
     }
-  } catch (error) {
+  } catch (_) {
     router.replace('/login')
   }
 }
@@ -151,60 +153,50 @@ watch(bindToken, () => {
 </script>
 
 <style scoped>
-:deep(.public-nav) {
-  width: calc(100% - 32px);
-  max-width: none;
-  margin: 10px 16px 0;
-  border: 0;
-  box-shadow: none;
-  background: transparent;
-}
-
 .oauth-shell {
   min-height: 100vh;
-  background: linear-gradient(160deg, #f4f8ff 0%, #ebf1fd 55%, #e4ebf8 100%);
+  padding-bottom: 20px;
 }
 
 .oauth-stage {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 20px 16px 28px;
+  width: min(900px, calc(100% - 28px));
+  margin: 18px auto 0;
 }
 
 .oauth-card {
-  padding: 24px 26px;
-  border: 1px solid #c7d8ff;
-  background: linear-gradient(175deg, rgba(255, 255, 255, 0.95), rgba(245, 249, 255, 0.92));
+  padding: 24px;
 }
 
 .platform-chip {
   display: inline-flex;
   margin: 0;
-  padding: 6px 12px;
+  min-height: 28px;
+  padding: 0 12px;
   border-radius: 999px;
-  background: #e7efff;
-  color: #3153a8;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-soft);
+  color: var(--text-accent);
   font-size: 12px;
-  font-weight: 700;
+  align-items: center;
 }
 
-h2 {
-  margin: 12px 0 10px;
-  color: #1e3a8a;
+.oauth-card h2 {
+  margin-top: 12px;
+  font-size: clamp(32px, 3.2vw, 44px);
+  line-height: 1.16;
 }
 
 .desc {
-  margin: 0;
-  color: #4d628c;
-  line-height: 1.7;
+  margin: 10px 0 0;
+  color: var(--text-sub);
 }
 
 .profile-preview {
   margin-top: 16px;
-  padding: 14px;
-  border: 1px solid #d4e0f8;
-  border-radius: 12px;
-  background: #f7faff;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--surface-soft);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -212,31 +204,30 @@ h2 {
 
 .profile-preview img,
 .avatar-fallback {
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
 }
 
 .avatar-fallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #4f7ad8, #3153a8);
+  background: var(--primary);
   color: #fff;
+  font-family: var(--font-serif);
   font-size: 24px;
-  font-weight: 700;
 }
 
 .profile-meta span {
-  color: #6b7da2;
+  color: var(--text-sub);
   font-size: 13px;
 }
 
 .profile-meta strong {
   display: block;
   margin-top: 4px;
-  color: #2d4b8f;
-  font-size: 16px;
+  color: var(--text-main);
 }
 
 .mode-switch {
@@ -247,20 +238,18 @@ h2 {
 }
 
 .mode-switch button {
-  height: 40px;
-  border-radius: 10px;
-  border: 1px solid #ccd8f3;
-  background: #f8fbff;
-  color: #3e598f;
+  min-height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--text-accent);
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .mode-switch button.active {
-  border-color: #4d76d8;
-  background: #edf3ff;
-  color: #2348a3;
-  font-weight: 700;
+  border-color: var(--primary);
+  background: rgba(201, 100, 66, 0.12);
+  color: var(--primary);
 }
 
 .mode-form {
@@ -268,13 +257,9 @@ h2 {
 }
 
 @media (max-width: 700px) {
-  :deep(.public-nav) {
-    width: calc(100% - 16px);
-    margin: 8px 8px 0;
-  }
-
   .oauth-stage {
-    padding: 10px 8px 16px;
+    width: calc(100% - 16px);
+    margin-top: 10px;
   }
 
   .oauth-card {

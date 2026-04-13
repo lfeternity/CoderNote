@@ -615,7 +615,7 @@ bootstrap()
   height: 210px;
   right: -60px;
   top: 38px;
-  background: rgba(59, 130, 246, 0.2);
+  background: rgba(201, 100, 66, 0.2);
 }
 
 .review-page::after {
@@ -692,7 +692,7 @@ h2 {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.12);
+  box-shadow: 0 8px 20px rgba(96, 58, 42, 0.14);
 }
 
 .board-ring-inner small {
@@ -803,7 +803,7 @@ h2 {
   padding: 12px;
   border: 1px solid var(--border-soft);
   background: linear-gradient(145deg, var(--surface) 0%, var(--surface-soft) 130%);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 8px 20px rgba(20, 20, 19, 0.06);
 }
 
 .stat-card.tone-primary {
@@ -885,7 +885,7 @@ h2 {
 .action-panel {
   border: 1px solid var(--border-soft);
   background: linear-gradient(165deg, var(--surface) 0%, var(--surface-soft) 100%);
-  box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.14), 0 10px 24px rgba(30, 64, 175, 0.06);
+  box-shadow: inset 0 1px 0 rgba(209, 207, 197, 0.22), 0 10px 24px rgba(74, 45, 31, 0.1);
 }
 
 .panel-head {
@@ -928,7 +928,7 @@ h2 {
 
 .category-item.active {
   border-color: var(--primary);
-  background: rgba(30, 64, 175, 0.1);
+  background: rgba(201, 100, 66, 0.12);
 }
 
 .category-line {
@@ -1077,9 +1077,9 @@ h2 {
 
 .action-empty-state {
   width: 100%;
-  border: 1px dashed rgba(59, 130, 246, 0.25);
+  border: 1px dashed rgba(201, 100, 66, 0.3);
   border-radius: 12px;
-  background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.12) 0%, var(--surface) 55%);
+  background: radial-gradient(circle at 50% 0%, rgba(201, 100, 66, 0.14) 0%, var(--surface) 55%);
   display: grid;
   place-items: center;
   text-align: center;
@@ -1090,8 +1090,8 @@ h2 {
   width: 54px;
   height: 54px;
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, rgba(59, 130, 246, 0.34), rgba(59, 130, 246, 0.08));
-  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.2);
+  background: radial-gradient(circle at 40% 35%, rgba(201, 100, 66, 0.34), rgba(201, 100, 66, 0.08));
+  box-shadow: 0 8px 18px rgba(201, 100, 66, 0.22);
 }
 
 .action-empty-state h4 {
@@ -1126,10 +1126,10 @@ h2 {
 }
 
 .selected-hero {
-  border: 1px solid rgba(59, 130, 246, 0.24);
+  border: 1px solid rgba(201, 100, 66, 0.24);
   border-radius: 12px;
   padding: 10px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(30, 64, 175, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(201, 100, 66, 0.16) 0%, rgba(176, 94, 63, 0.06) 100%);
 }
 
 .selected-caption {
@@ -1177,7 +1177,7 @@ h2 {
   top: 0;
   height: 2px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(30, 64, 175, 0.8), rgba(30, 64, 175, 0));
+  background: linear-gradient(90deg, rgba(201, 100, 66, 0.75), rgba(201, 100, 66, 0));
 }
 
 .selected-item small {
@@ -1305,7 +1305,7 @@ h2 {
   width: 100%;
   height: 7px;
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.2);
+  background: rgba(209, 207, 197, 0.32);
   overflow: hidden;
 }
 
@@ -1313,7 +1313,7 @@ h2 {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--danger), #f97316);
+  background: linear-gradient(90deg, var(--danger), #c27a46);
   min-width: 8px;
   box-shadow: 0 0 14px rgba(239, 68, 68, 0.32);
 }
@@ -1323,7 +1323,7 @@ h2 {
 }
 
 :deep(.row-selected td.el-table__cell) {
-  background: rgba(30, 64, 175, 0.08) !important;
+  background: rgba(201, 100, 66, 0.08) !important;
 }
 
 .overdue {

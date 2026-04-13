@@ -61,6 +61,20 @@ function mountCopyButtons() {
 <style scoped>
 .ai-markdown-body {
   line-height: 1.72;
+  --ai-code-bg: #232320;
+  --ai-code-border: #3b3a35;
+  --ai-code-text: #faf9f5;
+  --ai-copy-border: #6e6c66;
+  --ai-copy-bg: rgba(20, 20, 19, 0.74);
+  --ai-copy-bg-hover: rgba(20, 20, 19, 0.88);
+}
+
+:global(:root[data-theme='dark']) .ai-markdown-body {
+  --ai-code-bg: #1c1c1a;
+  --ai-code-border: #3f3f3a;
+  --ai-copy-border: #7b776f;
+  --ai-copy-bg: rgba(20, 20, 19, 0.78);
+  --ai-copy-bg-hover: rgba(20, 20, 19, 0.9);
 }
 
 .ai-markdown-body :deep(h1),
@@ -70,7 +84,7 @@ function mountCopyButtons() {
 .ai-markdown-body :deep(h5),
 .ai-markdown-body :deep(h6) {
   margin: 10px 0 8px;
-  color: #1f3b7a;
+  color: var(--text-main);
 }
 
 .ai-markdown-body :deep(p) {
@@ -84,10 +98,12 @@ function mountCopyButtons() {
 }
 
 .ai-markdown-body :deep(code) {
-  background: #eef2ff;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
   border-radius: 4px;
   padding: 2px 6px;
-  font-family: 'Consolas', 'Courier New', monospace;
+  color: var(--text-accent);
+  font-family: var(--font-mono);
 }
 
 .ai-markdown-body :deep(.ai-code-block),
@@ -95,11 +111,11 @@ function mountCopyButtons() {
   position: relative;
   margin: 10px 0;
   padding: 12px;
-  background: #1f2937;
-  color: #f8fafc;
+  background: var(--ai-code-bg);
+  color: var(--ai-code-text);
   border-radius: 10px;
   overflow-x: auto;
-  border: 1px solid #334155;
+  border: 1px solid var(--ai-code-border);
 }
 
 .ai-markdown-body :deep(.md-code code) {
@@ -112,32 +128,16 @@ function mountCopyButtons() {
   position: absolute;
   top: 8px;
   right: 8px;
-  border: 1px solid #64748b;
+  border: 1px solid var(--ai-copy-border);
   border-radius: 6px;
-  background: rgba(15, 23, 42, 0.78);
-  color: #e2e8f0;
+  background: var(--ai-copy-bg);
+  color: var(--ai-code-text);
   font-size: 12px;
   padding: 2px 8px;
   cursor: pointer;
 }
 
 .ai-markdown-body :deep(.ai-copy-btn:hover) {
-  background: rgba(30, 41, 59, 0.92);
-}
-
-@media (prefers-color-scheme: dark) {
-  .ai-markdown-body :deep(h1),
-  .ai-markdown-body :deep(h2),
-  .ai-markdown-body :deep(h3),
-  .ai-markdown-body :deep(h4),
-  .ai-markdown-body :deep(h5),
-  .ai-markdown-body :deep(h6) {
-    color: #dbeafe;
-  }
-
-  .ai-markdown-body :deep(code) {
-    background: #1e293b;
-    color: #e2e8f0;
-  }
+  background: var(--ai-copy-bg-hover);
 }
 </style>

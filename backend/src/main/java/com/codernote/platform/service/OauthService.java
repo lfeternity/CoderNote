@@ -16,12 +16,6 @@ public interface OauthService {
 
     String handleCallback(String platformCode, String state, String code, String error, HttpServletRequest request);
 
-    String renderMockAuthorizePage(String platformCode, String state, HttpServletRequest request);
-
-    String buildMockGrantCallbackUrl(String platformCode, String state, String accountId, String nickname, HttpServletRequest request);
-
-    String buildMockCancelCallbackUrl(String platformCode, String state, HttpServletRequest request);
-
     OauthPendingBindVO getPendingBindInfo(String bindToken, HttpServletRequest request);
 
     void bindExistingAccount(OauthBindExistingRequest request, HttpServletRequest servletRequest);

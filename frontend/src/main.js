@@ -7,6 +7,7 @@ import 'element-plus/theme-chalk/dark/css-vars.css'
 import App from './App.vue'
 import router from './router'
 import './styles/theme.css'
+import { initGlobalMotion } from './utils/motion'
 
 const THEME_STORAGE_KEY = 'eb_theme_mode'
 
@@ -29,3 +30,5 @@ app.use(createPinia())
 app.use(router)
 app.use(ElementPlus)
 app.mount('#app')
+
+initGlobalMotion(router)

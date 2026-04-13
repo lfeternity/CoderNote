@@ -25,7 +25,7 @@ import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { uploadCoverImage } from '../../api/file'
 import { buildCoverPreviewUrl } from '../../utils/bookshelf'
-import defaultCoverImage from '../../assets/default-bookshelf-cover.svg'
+import builtInDefaultCoverImage from '../../assets/default-bookshelf-cover.svg'
 
 const props = defineProps({
   modelValue: {
@@ -39,6 +39,10 @@ const props = defineProps({
   previewLabel: {
     type: String,
     default: '封面预览'
+  },
+  defaultCoverImage: {
+    type: String,
+    default: ''
   }
 })
 
@@ -55,7 +59,7 @@ const previewStyle = computed(() => {
     }
   }
   return {
-    backgroundImage: `url("${defaultCoverImage}")`
+    backgroundImage: `url("${props.defaultCoverImage || builtInDefaultCoverImage}")`
   }
 })
 
@@ -107,8 +111,8 @@ function resetDefaultCover() {
   aspect-ratio: 7 / 10;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(130, 167, 255, 0.42);
-  box-shadow: 0 8px 22px rgba(25, 88, 194, 0.2);
+  border: 1px solid rgba(240, 216, 197, 0.6);
+  box-shadow: 0 10px 20px rgba(20, 20, 19, 0.12);
   background-size: cover;
   background-position: center;
 }
@@ -127,12 +131,12 @@ function resetDefaultCover() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(180deg, rgba(10, 18, 35, 0) 0%, rgba(10, 18, 35, 0.74) 100%);
+  background: linear-gradient(180deg, rgba(28, 20, 15, 0) 0%, rgba(28, 20, 15, 0.76) 100%);
 }
 
 .preview-label {
   font-size: 12px;
-  color: rgba(235, 245, 255, 0.95);
+  color: rgba(255, 243, 234, 0.94);
 }
 
 .cover-actions {
@@ -143,7 +147,7 @@ function resetDefaultCover() {
 }
 
 .cover-tip {
-  color: #6b7280;
+  color: var(--text-sub);
   font-size: 12px;
 }
 </style>

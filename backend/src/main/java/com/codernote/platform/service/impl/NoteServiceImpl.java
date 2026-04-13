@@ -687,10 +687,11 @@ public class NoteServiceImpl implements NoteService {
     }
 
     private String buildAutoSummary(String content) {
-        if (!StringUtils.hasText(content)) {
+        String plain = stripHtmlToPlainText(content);
+        if (!StringUtils.hasText(plain)) {
             return "内容更新";
         }
-        String normalized = content.replaceAll("\\s+", " ").trim();
+        String normalized = plain.replaceAll("\\s+", " ").trim();
         if (!StringUtils.hasText(normalized)) {
             return "内容更新";
         }
@@ -829,6 +830,24 @@ public class NoteServiceImpl implements NoteService {
                 .replaceAll("(?is)<iframe[^>]*>.*?</iframe>", "")
                 .replaceAll("(?is)<object[^>]*>.*?</object>", "");
         return value;
+    }
+
+    private String stripHtmlToPlainText(String content) {
+        if (!StringUtils.hasText(content)) {
+            return "";
+        }
+        String normalized = content
+                .replaceAll("(?is)<script[^>]*>.*?</script>", " ")
+                .replaceAll("(?is)<style[^>]*>.*?</style>", " ")
+                .replaceAll("(?i)<br\\s*/?>", "\n")
+                .replaceAll("(?i)</p>", "\n")
+                .replaceAll("(?i)</h[1-6]>", "\n")
+                .replaceAll("(?i)</li>", "\n")
+                .replaceAll("(?is)<[^>]+>", " ")
+                .replace("&nbsp;", " ");
+        return normalized.replaceAll("[\\t\\x0B\\f\\r ]+", " ")
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
     }
 
     private void ensureOwnedNotes(Long userId, Set<Long> noteIds) {

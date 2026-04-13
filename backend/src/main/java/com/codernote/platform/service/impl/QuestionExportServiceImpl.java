@@ -1,7 +1,6 @@
 package com.codernote.platform.service.impl;
 
 import com.codernote.platform.common.PageResult;
-import com.codernote.platform.dto.question.QuestionAttachmentVO;
 import com.codernote.platform.dto.question.QuestionDetailVO;
 import com.codernote.platform.dto.question.QuestionListItemVO;
 import com.codernote.platform.exception.BizException;
@@ -24,25 +23,19 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 public class QuestionExportServiceImpl implements QuestionExportService {
 
     private static final long QUERY_PAGE_SIZE = 200L;
     private static final float PAGE_MARGIN = 44f;
-    private static final float TITLE_FONT_SIZE = 16f;
     private static final float BODY_FONT_SIZE = 10.5f;
     private static final float LINE_HEIGHT = 15f;
     private static final float BLOCK_GAP = 6f;
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final QuestionService questionService;
 
@@ -53,13 +46,13 @@ public class QuestionExportServiceImpl implements QuestionExportService {
     @Override
     public byte[] exportPdf(Long userId, String language, String tag, String masteryStatus, String keyword) {
         List<QuestionDetailVO> questions = loadQuestions(userId, language, tag, masteryStatus, keyword);
-        return buildPdf(questions, "筛选条件导出", buildFilterSummary(language, tag, masteryStatus, keyword));
+        return buildPdf(questions);
     }
 
     @Override
     public byte[] exportPdfByQuestionId(Long userId, Long questionId) {
         QuestionDetailVO detail = questionService.detail(userId, questionId);
-        return buildPdf(Collections.singletonList(detail), "单个错题导出", "错题ID=" + questionId);
+        return buildPdf(Collections.singletonList(detail));
     }
 
     @Override
@@ -77,23 +70,14 @@ public class QuestionExportServiceImpl implements QuestionExportService {
         for (Long questionId : dedupIds) {
             questions.add(questionService.detail(userId, questionId));
         }
-        return buildPdf(questions, "选中错题导出", "选中数量=" + questions.size());
+        return buildPdf(questions);
     }
 
-    private byte[] buildPdf(List<QuestionDetailVO> questions, String exportType, String scope) {
+    private byte[] buildPdf(List<QuestionDetailVO> questions) {
         try (PDDocument document = new PDDocument();
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             PDFont font = loadFont(document);
             PdfCursor cursor = createPage(document);
-
-            cursor = writeParagraph(document, cursor, font, TITLE_FONT_SIZE, PAGE_MARGIN, "CoderNote 错题导出");
-            cursor = writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN,
-                    "导出时间: " + LocalDateTime.now().format(DATE_TIME_FORMATTER));
-            cursor = writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN,
-                    "导出方式: " + (StringUtils.hasText(exportType) ? exportType : "筛选条件导出"));
-            cursor = writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN,
-                    "导出范围: " + (StringUtils.hasText(scope) ? scope : "全部"));
-            cursor.y -= BLOCK_GAP;
 
             if (CollectionUtils.isEmpty(questions)) {
                 cursor = writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN,
@@ -148,62 +132,20 @@ public class QuestionExportServiceImpl implements QuestionExportService {
         return questions;
     }
 
-    private String buildFilterSummary(String language, String tag, String masteryStatus, String keyword) {
-        List<String> filters = new ArrayList<>();
-        if (StringUtils.hasText(language)) {
-            filters.add("语言=" + language.trim());
-        }
-        if (StringUtils.hasText(tag)) {
-            filters.add("标签=" + tag.trim());
-        }
-        if (StringUtils.hasText(masteryStatus)) {
-            filters.add("掌握状态=" + toMasteryLabel(masteryStatus.trim()));
-        }
-        if (StringUtils.hasText(keyword)) {
-            filters.add("搜索=" + keyword.trim());
-        }
-        if (filters.isEmpty()) {
-            return "全部";
-        }
-        return String.join("；", filters);
-    }
-
-    private String toMasteryLabel(String masteryStatus) {
-        if (!StringUtils.hasText(masteryStatus)) {
-            return "";
-        }
-        if ("MASTERED".equalsIgnoreCase(masteryStatus)) {
-            return "已掌握";
-        }
-        if ("REVIEWING".equalsIgnoreCase(masteryStatus)) {
-            return "复习中";
-        }
-        return "未复习";
-    }
-
     private PdfCursor writeQuestionBlock(PDDocument document,
                                          PdfCursor cursor,
                                          PDFont font,
                                          int index,
                                          QuestionDetailVO detail) throws IOException {
-        cursor = drawDivider(document, cursor);
-        cursor = writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN,
-                "错题 #" + index);
+        if (index > 1) {
+            cursor = drawDivider(document, cursor);
+        }
         cursor = writeField(document, cursor, font, "标题", detail.getTitle());
         cursor = writeField(document, cursor, font, "编程语言", detail.getLanguage());
-        cursor = writeField(document, cursor, font, "知识点标签", joinList(detail.getTagNames()));
-        cursor = writeField(document, cursor, font, "掌握状态", toMasteryLabel(detail.getMasteryStatus()));
-        cursor = writeField(document, cursor, font, "新增时间", formatDateTime(detail.getCreatedAt()));
-        cursor = writeField(document, cursor, font, "更新时间", formatDateTime(detail.getUpdatedAt()));
-
         cursor = writeField(document, cursor, font, "错误题目", detail.getErrorCode());
-        cursor = writeAttachments(document, cursor, font, "错误题目附件", detail.getErrorQuestionAttachments());
         cursor = writeField(document, cursor, font, "错误原因", detail.getErrorReason());
         cursor = writeField(document, cursor, font, "正确方案", detail.getCorrectCode());
-        cursor = writeAttachments(document, cursor, font, "正确方案附件", detail.getCorrectSolutionAttachments());
         cursor = writeField(document, cursor, font, "解决方案", detail.getSolution());
-        cursor = writeField(document, cursor, font, "错题来源", detail.getSource());
-        cursor = writeField(document, cursor, font, "备注", detail.getRemark());
 
         cursor.y -= BLOCK_GAP;
         return cursor;
@@ -216,25 +158,6 @@ public class QuestionExportServiceImpl implements QuestionExportService {
                                  String value) throws IOException {
         String safeValue = StringUtils.hasText(value) ? normalizeText(value) : "-";
         return writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN, label + ": " + safeValue);
-    }
-
-    private PdfCursor writeAttachments(PDDocument document,
-                                       PdfCursor cursor,
-                                       PDFont font,
-                                       String label,
-                                       List<QuestionAttachmentVO> attachments) throws IOException {
-        if (CollectionUtils.isEmpty(attachments)) {
-            return writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN, label + ": -");
-        }
-        String names = attachments.stream()
-                .filter(Objects::nonNull)
-                .map(item -> StringUtils.hasText(item.getFileName()) ? item.getFileName().trim() : item.getPath())
-                .filter(StringUtils::hasText)
-                .collect(Collectors.joining(", "));
-        if (!StringUtils.hasText(names)) {
-            names = "-";
-        }
-        return writeParagraph(document, cursor, font, BODY_FONT_SIZE, PAGE_MARGIN, label + ": " + names);
     }
 
     private PdfCursor drawDivider(PDDocument document, PdfCursor cursor) throws IOException {
@@ -340,24 +263,6 @@ public class QuestionExportServiceImpl implements QuestionExportService {
             return "";
         }
         return text.replace("\r\n", "\n").replace('\r', '\n').trim();
-    }
-
-    private String joinList(List<String> list) {
-        if (CollectionUtils.isEmpty(list)) {
-            return "-";
-        }
-        String joined = list.stream()
-                .filter(StringUtils::hasText)
-                .map(String::trim)
-                .collect(Collectors.joining(", "));
-        return StringUtils.hasText(joined) ? joined : "-";
-    }
-
-    private String formatDateTime(LocalDateTime dateTime) {
-        if (dateTime == null) {
-            return "-";
-        }
-        return dateTime.format(DATE_TIME_FORMATTER);
     }
 
     private PDFont loadFont(PDDocument document) {

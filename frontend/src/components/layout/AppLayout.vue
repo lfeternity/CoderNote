@@ -1,37 +1,44 @@
-﻿<template>
+<template>
   <div class="layout-shell" :class="{ 'is-sidebar-collapsed': isSidebarCollapsed }">
-    <aside class="sidebar surface-card">
-      <div class="brand" :title="isSidebarCollapsed ? 'CoderNote' : ''">
-        <span class="brand-main">CoderNote</span>
-        <span class="brand-mini">CN</span>
+    <aside class="sidebar surface-card glass-panel">
+      <div class="sidebar-head">
+        <button class="brand" type="button" :title="isSidebarCollapsed ? 'CoderNote' : ''" @click="router.push('/index')">
+          <span class="brand-main">CoderNote</span>
+          <span class="brand-mini">CN</span>
+        </button>
+        <button
+          v-if="!isSidebarCollapsed"
+          class="collapse-toggle"
+          type="button"
+          :aria-label="isSidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
+          @click="toggleSidebar"
+        >
+          <el-icon class="collapse-toggle-icon">
+            <ArrowLeft />
+          </el-icon>
+        </button>
       </div>
 
       <div class="user-box">
-        <div class="user-top">
-          <el-tooltip content="更换头像" placement="right">
-            <button class="avatar-trigger" type="button" @click="router.push('/user/center')">
-              <UserAvatar :src="authStore.profile?.avatarUrl" :nickname="authStore.profile?.nickname" :size="54" />
-            </button>
-          </el-tooltip>
-          <div class="user-meta">
-            <p class="nickname">{{ authStore.profile?.nickname || '同学' }}</p>
-            <p class="major">{{ displayMajor }}</p>
-          </div>
+        <button class="avatar-trigger" type="button" @click="router.push('/user/center')">
+          <UserAvatar :src="authStore.profile?.avatarUrl" :nickname="authStore.profile?.nickname" :size="52" />
+        </button>
+        <div class="user-meta">
+          <p class="nickname">{{ authStore.profile?.nickname || '同学' }}</p>
+          <p class="major">{{ displayMajor }}</p>
         </div>
+        <button
+          v-if="isSidebarCollapsed"
+          class="collapse-toggle collapse-toggle-under-avatar"
+          type="button"
+          aria-label="Expand sidebar"
+          @click="toggleSidebar"
+        >
+          <el-icon class="collapse-toggle-icon">
+            <ArrowRight />
+          </el-icon>
+        </button>
       </div>
-
-      <button
-        class="collapse-toggle"
-        type="button"
-        :aria-label="isSidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'"
-        @click="toggleSidebar"
-      >
-        <el-icon class="collapse-toggle-icon">
-          <ArrowRight v-if="isSidebarCollapsed" />
-          <ArrowLeft v-else />
-        </el-icon>
-        <span class="collapse-toggle-text">{{ isSidebarCollapsed ? '展开侧边栏' : '折叠侧边栏' }}</span>
-      </button>
 
       <el-menu
         :default-active="activePath"
@@ -41,11 +48,7 @@
         class="menu"
         @select="handleMenu"
       >
-        <el-menu-item
-          v-for="item in sidebarMenuItems"
-          :key="item.path"
-          :index="item.path"
-        >
+        <el-menu-item v-for="item in sidebarMenuItems" :key="item.path" :index="item.path">
           <el-icon :aria-label="item.ariaLabel">
             <component :is="item.icon" />
           </el-icon>
@@ -57,7 +60,7 @@
     </aside>
 
     <main class="content-area">
-      <div class="topbar surface-card">
+      <div class="topbar surface-card glass-panel">
         <el-input
           v-model="keyword"
           placeholder="全局搜索：错题 / 资料 / 笔记 / 标签 / 语言"
@@ -72,14 +75,16 @@
         <div class="actions">
           <el-button type="primary" plain @click="router.push('/note/add')">新建笔记</el-button>
           <el-button class="profile-entry" @click="router.push('/user/center')">
-            <UserAvatar :src="authStore.profile?.avatarUrl" :nickname="authStore.profile?.nickname" :size="28" />
+            <UserAvatar :src="authStore.profile?.avatarUrl" :nickname="authStore.profile?.nickname" :size="26" />
             <span>个人中心</span>
           </el-button>
           <el-button type="danger" plain @click="onLogout">退出登录</el-button>
         </div>
       </div>
 
-      <div class="view surface-card" :class="{ 'fade-in': !disableViewFadeIn }">
+      <div class="decor-divider layout-divider" aria-hidden="true"></div>
+
+      <div class="view surface-card glass-panel" :class="{ 'fade-in': !disableViewFadeIn, 'no-scroll': disableViewScroll }">
         <router-view />
       </div>
     </main>
@@ -118,6 +123,7 @@ const displayMajor = computed(() => {
 
 const activePath = computed(() => resolveSidebarActivePath(route.path))
 const disableViewFadeIn = computed(() => Boolean(route.meta?.disableViewFadeIn))
+const disableViewScroll = computed(() => Boolean(route.meta?.disableViewScroll))
 
 watch(
   () => route.query.keyword,
@@ -207,6 +213,7 @@ function onWindowResize() {
 function onExternalSidebarToggle() {
   toggleSidebar()
 }
+
 onMounted(async () => {
   await authStore.bootstrap()
   restoreSidebarPreference()
@@ -226,60 +233,110 @@ onBeforeUnmount(() => {
 <style scoped>
 .layout-shell {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: 264px minmax(0, 1fr);
+  gap: 16px;
   height: 100vh;
-  padding: 14px;
+  min-height: 100vh;
+  padding: 16px;
   overflow: hidden;
-  transition: grid-template-columns 0.3s ease;
+  position: relative;
+  isolation: isolate;
+}
+
+.layout-shell::before,
+.layout-shell::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.layout-shell::before {
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 7%, rgba(201, 100, 66, 0.11), rgba(201, 100, 66, 0) 38%),
+    radial-gradient(circle at 88% 24%, rgba(98, 124, 101, 0.12), rgba(98, 124, 101, 0) 34%);
+}
+
+.layout-shell::after {
+  width: clamp(180px, 18vw, 300px);
+  height: clamp(60px, 8vw, 100px);
+  right: 14px;
+  top: 10px;
+  border-radius: 999px;
+  border: 1px dashed rgba(201, 100, 66, 0.32);
+  transform: rotate(-7deg);
+  opacity: 0.5;
 }
 
 .layout-shell.is-sidebar-collapsed {
-  grid-template-columns: 90px minmax(0, 1fr);
+  grid-template-columns: 88px minmax(0, 1fr);
 }
 
 .sidebar {
-  padding: 16px;
-  position: sticky;
-  top: 14px;
-  height: calc(100vh - 28px);
+  --sidebar-menu-item-min-height: 38px;
+  --sidebar-menu-item-gap: clamp(4px, 0.7vh, 8px);
   display: flex;
   flex-direction: column;
+  position: sticky;
+  top: 16px;
+  align-self: start;
+  height: calc(100vh - 32px);
+  min-height: 0;
+  padding: 14px;
   overflow: hidden;
-  transition: padding 0.3s ease;
+  background:
+    linear-gradient(170deg, color-mix(in srgb, var(--surface-soft) 44%, transparent) 0%, transparent 38%),
+    color-mix(in srgb, var(--surface) 92%, transparent);
 }
 
-.layout-shell.is-sidebar-collapsed .sidebar {
-  padding: 12px 10px;
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: -42px;
+  right: -38px;
+  width: 160px;
+  height: 112px;
+  border-radius: 999px;
+  background: radial-gradient(circle at center, rgba(201, 100, 66, 0.2), rgba(201, 100, 66, 0));
+  pointer-events: none;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .brand {
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  min-height: 30px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .brand-main {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--primary);
+  font-family: var(--font-serif);
+  font-size: 27px;
+  color: var(--text-main);
   white-space: nowrap;
-  transition: opacity 0.25s ease, width 0.25s ease;
+  transition: opacity 0.2s ease, width 0.2s ease;
 }
 
 .brand-mini {
   width: 0;
   opacity: 0;
   overflow: hidden;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--primary);
-  transition: opacity 0.25s ease, width 0.25s ease;
-}
-
-.layout-shell.is-sidebar-collapsed .brand {
-  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  color: var(--text-main);
+  transition: opacity 0.2s ease, width 0.2s ease;
 }
 
 .layout-shell.is-sidebar-collapsed .brand-main {
@@ -293,167 +350,194 @@ onBeforeUnmount(() => {
   opacity: 1;
 }
 
-.user-box {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-soft);
-  padding: 10px;
-  margin-bottom: 10px;
-  transition: padding 0.3s ease;
-}
-
-.user-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.layout-shell.is-sidebar-collapsed .user-box {
-  padding: 8px;
-}
-
-.layout-shell.is-sidebar-collapsed .user-top {
+.layout-shell.is-sidebar-collapsed .sidebar-head {
   justify-content: center;
-}
-
-.avatar-trigger {
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-}
-
-.user-meta {
-  min-width: 0;
-  transition: opacity 0.25s ease, width 0.25s ease, margin 0.25s ease;
-}
-
-.layout-shell.is-sidebar-collapsed .user-meta {
-  width: 0;
-  margin: 0;
-  opacity: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.nickname {
-  margin: 0;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.major {
-  margin: 4px 0 0;
-  color: var(--text-sub);
-  font-size: 12px;
-  white-space: nowrap;
 }
 
 .collapse-toggle {
-  width: 100%;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
   border: 1px solid var(--border-soft);
-  background: var(--surface-soft);
   border-radius: 10px;
-  min-height: 36px;
-  padding: 0 10px;
+  background: var(--surface-soft);
+  color: var(--text-main);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   cursor: pointer;
-  color: var(--text-accent);
-  margin-bottom: 10px;
-  transition: all 0.2s ease;
 }
 
 .collapse-toggle:hover {
-  background: var(--surface-soft-hover);
   border-color: var(--primary);
-  color: var(--text-accent-strong);
+  color: var(--primary);
 }
 
 .collapse-toggle-icon {
   font-size: 16px;
 }
 
-.collapse-toggle-text {
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: 600;
-  transition: opacity 0.25s ease, width 0.25s ease;
+.user-box {
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-soft);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
 }
 
-.layout-shell.is-sidebar-collapsed .collapse-toggle {
+.avatar-trigger {
+  border: none;
+  background: transparent;
+  cursor: pointer;
   padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
 }
 
-.layout-shell.is-sidebar-collapsed .collapse-toggle-text {
+.user-meta {
+  min-width: 0;
+  transition: opacity 0.2s ease, width 0.2s ease;
+}
+
+.nickname {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-main);
+}
+
+.major {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.layout-shell.is-sidebar-collapsed .user-box {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 8px 6px;
+  min-height: 0;
+}
+
+.layout-shell.is-sidebar-collapsed .user-meta {
+  display: none;
   width: 0;
+  height: 0;
   opacity: 0;
   overflow: hidden;
 }
 
+.layout-shell.is-sidebar-collapsed .avatar-trigger {
+  width: 100%;
+}
+
+.layout-shell.is-sidebar-collapsed .avatar-trigger :deep(.user-avatar) {
+  margin: 0 auto;
+}
+
+.collapse-toggle-under-avatar {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+}
+
 .menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sidebar-menu-item-gap);
   border-right: none;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
-  padding-bottom: 8px;
-  -webkit-overflow-scrolling: touch;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.menu::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
+  padding-bottom: 0;
 }
 
 .menu :deep(.el-menu-item) {
   border-radius: 10px;
-  margin: 4px 0;
-  transition: background-color 0.2s ease;
+  flex: 1 1 0;
+  min-height: var(--sidebar-menu-item-min-height);
+  height: auto;
+  line-height: 1.25;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  color: var(--text-accent);
+  transition: transform 0.22s ease, border-color 0.22s ease, background-color 0.22s ease, color 0.22s ease;
 }
 
-.menu :deep(.el-menu-item .el-icon),
-.menu :deep(.el-menu-item .menu-label) {
-  transition: transform 0.2s ease;
+.menu :deep(.el-menu-item .el-icon) {
+  transition: transform 0.22s ease;
 }
 
-.menu :deep(.el-menu-item:hover .el-icon),
-.menu :deep(.el-menu-item:hover .menu-label) {
-  transform: scale(1.05);
+.menu :deep(.el-menu-item:hover) {
+  background: rgba(201, 100, 66, 0.08);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.menu :deep(.el-menu-item:hover .el-icon) {
+  transform: translateX(1px) rotate(-6deg);
+}
+
+.menu :deep(.el-menu-item.is-active) {
+  background: rgba(201, 100, 66, 0.15);
+  color: var(--primary);
+  border: 1px solid rgba(201, 100, 66, 0.35);
 }
 
 .layout-shell.is-sidebar-collapsed .menu :deep(.el-menu-item) {
   padding: 0 !important;
+  margin: 0;
   justify-content: center;
 }
 
 .content-area {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
 }
 
 .topbar {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
   align-items: center;
   padding: 12px;
+  overflow: hidden;
+}
+
+.topbar::after {
+  content: '';
+  position: absolute;
+  right: -22px;
+  top: -22px;
+  width: 140px;
+  height: 84px;
+  border-radius: 999px;
+  border: 1px dashed rgba(201, 100, 66, 0.34);
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .actions {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .profile-entry {
@@ -462,33 +546,65 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 
+.layout-divider {
+  margin: -2px 0;
+}
+
 .view {
-  padding: 16px;
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: auto;
+  padding: 18px;
+  scroll-behavior: smooth;
+  background:
+    linear-gradient(178deg, color-mix(in srgb, var(--surface) 90%, transparent) 0%, color-mix(in srgb, var(--surface-soft) 60%, transparent) 100%);
 }
 
-@media (max-width: 768px) {
+.view::before {
+  content: '';
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  width: 92px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px dashed rgba(201, 100, 66, 0.28);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.view.no-scroll {
+  overflow: hidden;
+}
+
+.glass-panel {
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 960px) {
   .layout-shell {
     grid-template-columns: 1fr;
     height: auto;
-    min-height: 100vh;
+    min-height: auto;
+    padding: 8px;
     overflow: visible;
+  }
+
+  .layout-shell.is-sidebar-collapsed {
+    grid-template-columns: 1fr;
   }
 
   .sidebar {
     position: static;
+    top: auto;
+    align-self: stretch;
     height: auto;
+    min-height: auto;
   }
 
-  .content-area {
-    overflow: visible;
-  }
-
-  .view {
-    overflow: visible;
-    min-height: calc(100vh - 140px);
+  .menu {
+    max-height: none;
   }
 
   .topbar {
@@ -497,6 +613,21 @@ onBeforeUnmount(() => {
 
   .actions {
     justify-content: flex-start;
+  }
+
+  .content-area {
+    height: auto;
+  }
+
+  .view {
+    min-height: calc(100vh - 240px);
+    overflow: visible;
+  }
+
+  .layout-shell::after,
+  .topbar::after,
+  .view::before {
+    opacity: 0.24;
   }
 }
 </style>

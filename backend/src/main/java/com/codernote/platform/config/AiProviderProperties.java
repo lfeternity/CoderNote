@@ -19,6 +19,12 @@ public class AiProviderProperties {
 
     private Provider openai = new Provider();
 
+    private Provider deepseek = new Provider();
+
+    private Provider gemini = new Provider();
+
+    private Provider claude = new Provider();
+
     @Data
     public static class Provider {
         private String apiKey;

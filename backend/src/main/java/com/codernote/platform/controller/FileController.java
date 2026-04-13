@@ -47,7 +47,7 @@ public class FileController {
     );
 
     private static final Set<String> IMAGE_EXTENSIONS = Set.of("png", "jpg", "jpeg", "gif", "webp", "bmp");
-    private static final Set<String> BIZ_TYPES = Set.of("question", "material", "note");
+    private static final Set<String> BIZ_TYPES = Set.of("question", "material", "note", "tag");
 
     private final Path uploadBaseDir;
 
@@ -157,7 +157,11 @@ public class FileController {
         String questionPrefix = "question/" + userId + "/";
         String materialPrefix = "material/" + userId + "/";
         String notePrefix = "note/" + userId + "/";
-        if (!cleaned.startsWith(questionPrefix) && !cleaned.startsWith(materialPrefix) && !cleaned.startsWith(notePrefix)) {
+        String tagPrefix = "tag/" + userId + "/";
+        if (!cleaned.startsWith(questionPrefix)
+                && !cleaned.startsWith(materialPrefix)
+                && !cleaned.startsWith(notePrefix)
+                && !cleaned.startsWith(tagPrefix)) {
             throw new BizException(403, "No permission for this file");
         }
 

@@ -234,10 +234,10 @@ function onSubmit() {
 
 .attachment-list {
   margin-top: 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   padding: 8px 10px;
-  background: #fafbff;
+  background: var(--surface-soft);
 }
 
 .attachment-item {

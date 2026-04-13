@@ -115,5 +115,7 @@ h2 {
 
 .block {
   padding: 16px;
+  height: calc(100vh - 178px);
+  min-height: 620px;
 }
 </style>

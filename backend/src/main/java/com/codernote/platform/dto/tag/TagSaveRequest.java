@@ -9,4 +9,6 @@ public class TagSaveRequest {
 
     @NotBlank(message = "Tag name is required")
     private String name;
+
+    private String coverPath;
 }

@@ -6,7 +6,7 @@ import lombok.Data;
 public class AiModelConfig {
 
     /**
-     * Provider key, compatible with OPENAI/QWEN/KIMI (case-insensitive).
+     * Provider key, compatible with OPENAI/QWEN/KIMI/DEEPSEEK/GEMINI/CLAUDE (case-insensitive).
      */
     private String provider;
 
@@ -21,7 +21,7 @@ public class AiModelConfig {
     private String apiKey;
 
     /**
-     * Actual provider model id, for example gpt-5.2 / qwen-plus / moonshot-v1-8k.
+     * Actual provider model id, for example gpt-5.2 / qwen-plus / deepseek-chat / gemini-2.0-flash / claude-3-5-sonnet-latest.
      */
     private String modelName;
 }

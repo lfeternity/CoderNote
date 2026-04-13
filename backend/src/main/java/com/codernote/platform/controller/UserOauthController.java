@@ -7,8 +7,6 @@ import com.codernote.platform.dto.user.OauthBindingStatusVO;
 import com.codernote.platform.dto.user.OauthPendingBindVO;
 import com.codernote.platform.security.AuthContext;
 import com.codernote.platform.service.OauthService;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -65,36 +63,6 @@ public class UserOauthController {
                          HttpServletResponse response) throws IOException {
         String redirectUrl = oauthService.handleCallback(platform, state, code, error, request);
         response.sendRedirect(redirectUrl);
-    }
-
-    @GetMapping(value = "/mock/authorize/{platform}", produces = MediaType.TEXT_HTML_VALUE)
-    public ResponseEntity<String> mockAuthorizePage(@PathVariable String platform,
-                                                    @RequestParam("state") String state,
-                                                    HttpServletRequest request) {
-        String html = oauthService.renderMockAuthorizePage(platform, state, request);
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("text/html;charset=UTF-8"))
-                .body(html);
-    }
-
-    @PostMapping("/mock/grant/{platform}")
-    public void mockGrant(@PathVariable String platform,
-                          @RequestParam("state") String state,
-                          @RequestParam(value = "accountId", required = false) String accountId,
-                          @RequestParam(value = "nickname", required = false) String nickname,
-                          HttpServletRequest request,
-                          HttpServletResponse response) throws IOException {
-        String callbackUrl = oauthService.buildMockGrantCallbackUrl(platform, state, accountId, nickname, request);
-        response.sendRedirect(callbackUrl);
-    }
-
-    @GetMapping("/mock/cancel/{platform}")
-    public void mockCancel(@PathVariable String platform,
-                           @RequestParam("state") String state,
-                           HttpServletRequest request,
-                           HttpServletResponse response) throws IOException {
-        String callbackUrl = oauthService.buildMockCancelCallbackUrl(platform, state, request);
-        response.sendRedirect(callbackUrl);
     }
 
     @GetMapping("/pending/{bindToken}")

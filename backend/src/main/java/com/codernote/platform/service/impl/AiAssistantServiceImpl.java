@@ -57,12 +57,18 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     private static final String MODEL_QWEN = "QWEN";
     private static final String MODEL_KIMI = "KIMI";
     private static final String MODEL_OPENAI = "OPENAI";
+    private static final String MODEL_DEEPSEEK = "DEEPSEEK";
+    private static final String MODEL_GEMINI = "GEMINI";
+    private static final String MODEL_CLAUDE = "CLAUDE";
 
     private static final Set<String> SUPPORTED_MODELS = Set.of(
             DEFAULT_MODEL,
             MODEL_QWEN,
             MODEL_KIMI,
-            MODEL_OPENAI
+            MODEL_OPENAI,
+            MODEL_DEEPSEEK,
+            MODEL_GEMINI,
+            MODEL_CLAUDE
     );
 
     private static final String SUMMARY_CORE_EXTRACT = "CORE_EXTRACT";
@@ -128,10 +134,31 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         ));
         list.add(model(
                 MODEL_OPENAI,
-                "OpenAI",
+                "ChatGPT (OpenAI)",
                 hasProviderKey(MODEL_OPENAI)
                         ? "已配置 API Key，将通过 OpenAI 接口调用"
                         : "未配置 API Key，配置后可调用"
+        ));
+        list.add(model(
+                MODEL_DEEPSEEK,
+                "DeepSeek",
+                hasProviderKey(MODEL_DEEPSEEK)
+                        ? "API Key configured, requests will use DeepSeek endpoint"
+                        : "API Key not configured, configure it before use"
+        ));
+        list.add(model(
+                MODEL_GEMINI,
+                "Gemini",
+                hasProviderKey(MODEL_GEMINI)
+                        ? "API Key configured, requests will use Gemini endpoint"
+                        : "API Key not configured, configure it before use"
+        ));
+        list.add(model(
+                MODEL_CLAUDE,
+                "Claude",
+                hasProviderKey(MODEL_CLAUDE)
+                        ? "API Key configured, requests will use Claude endpoint"
+                        : "API Key not configured, configure it before use"
         ));
         vo.setModels(list);
         return vo;
@@ -718,7 +745,12 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     }
 
     private boolean isProviderModel(String model) {
-        return MODEL_QWEN.equals(model) || MODEL_KIMI.equals(model) || MODEL_OPENAI.equals(model);
+        return MODEL_QWEN.equals(model)
+                || MODEL_KIMI.equals(model)
+                || MODEL_OPENAI.equals(model)
+                || MODEL_DEEPSEEK.equals(model)
+                || MODEL_GEMINI.equals(model)
+                || MODEL_CLAUDE.equals(model);
     }
 
     private boolean hasProviderKey(String model) {
@@ -835,7 +867,6 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 runtimeProviderConfig == null ? "" : runtimeProviderConfig.baseUrl,
                 providerEndpoint(model)
         );
-        endpoint = normalizeCompletionEndpoint(endpoint);
 
         String providerModel = firstNonBlank(
                 runtimeProviderConfig == null ? "" : runtimeProviderConfig.modelName,
@@ -845,42 +876,212 @@ public class AiAssistantServiceImpl implements AiAssistantService {
                 ? 20000
                 : aiProviderProperties.getTimeoutMs();
 
-        ObjectNode body = objectMapper.createObjectNode();
-        body.put("model", providerModel);
-        body.set("messages", messages);
-        body.put("temperature", 0.2d);
-
         try {
             if (!StringUtils.hasText(endpoint) || (!endpoint.startsWith("http://") && !endpoint.startsWith("https://"))) {
                 throw new BizException(400, providerLabel(model) + " Endpoint 配置无效，请检查 application.yml");
             }
-            HttpRequest httpRequest = HttpRequest.newBuilder(URI.create(endpoint))
-                    .timeout(Duration.ofMillis(timeoutMs))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + apiKey)
-                    .POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                String providerErrorMessage = extractProviderErrorMessage(response.body());
-                if (StringUtils.hasText(providerErrorMessage)) {
-                    throw new BizException(503, providerLabel(model) + " 调用失败(" + response.statusCode() + ")：" + providerErrorMessage);
-                }
-                throw new BizException(503, providerLabel(model) + " 服务调用失败(" + response.statusCode() + ")，请检查 API Key/模型/Endpoint 配置");
+            if (MODEL_GEMINI.equals(model)) {
+                return callGeminiCompletion(model, endpoint, apiKey, providerModel, messages, timeoutMs);
             }
-
-            JsonNode root = objectMapper.readTree(response.body());
-            String content = extractProviderContent(root);
-            if (!StringUtils.hasText(content)) {
-                throw new BizException(503, providerLabel(model) + " 返回结果为空，请重试");
+            if (MODEL_CLAUDE.equals(model)) {
+                return callClaudeCompletion(model, endpoint, apiKey, providerModel, messages, timeoutMs);
             }
-            return content;
+            return callOpenAiCompatibleCompletion(model, endpoint, apiKey, providerModel, messages, timeoutMs);
         } catch (BizException ex) {
             throw ex;
         } catch (Exception ex) {
             throw new BizException(503, providerLabel(model) + " 服务繁忙，请重试");
         }
+    }
+
+    private String callOpenAiCompatibleCompletion(String model,
+                                                  String endpoint,
+                                                  String apiKey,
+                                                  String providerModel,
+                                                  ArrayNode messages,
+                                                  int timeoutMs) throws Exception {
+        String normalizedEndpoint = normalizeCompletionEndpoint(endpoint);
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("model", providerModel);
+        body.set("messages", messages);
+        body.put("temperature", 0.2d);
+
+        HttpRequest httpRequest = HttpRequest.newBuilder(URI.create(normalizedEndpoint))
+                .timeout(Duration.ofMillis(timeoutMs))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
+                .build();
+
+        JsonNode root = executeProviderRequest(model, httpRequest);
+        String content = extractProviderContent(root);
+        if (!StringUtils.hasText(content)) {
+            throw new BizException(503, providerLabel(model) + " 返回结果为空，请重试");
+        }
+        return content;
+    }
+
+    private String callGeminiCompletion(String model,
+                                        String endpoint,
+                                        String apiKey,
+                                        String providerModel,
+                                        ArrayNode messages,
+                                        int timeoutMs) throws Exception {
+        String normalizedEndpoint = normalizeGeminiEndpoint(endpoint, providerModel);
+        ObjectNode body = objectMapper.createObjectNode();
+        body.set("contents", toGeminiContents(messages));
+
+        ObjectNode generationConfig = objectMapper.createObjectNode();
+        generationConfig.put("temperature", 0.2d);
+        body.set("generationConfig", generationConfig);
+
+        HttpRequest httpRequest = HttpRequest.newBuilder(URI.create(normalizedEndpoint))
+                .timeout(Duration.ofMillis(timeoutMs))
+                .header("Content-Type", "application/json")
+                .header("x-goog-api-key", apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
+                .build();
+
+        JsonNode root = executeProviderRequest(model, httpRequest);
+        String content = extractProviderContent(root);
+        if (!StringUtils.hasText(content)) {
+            throw new BizException(503, providerLabel(model) + " 返回结果为空，请重试");
+        }
+        return content;
+    }
+
+    private String callClaudeCompletion(String model,
+                                        String endpoint,
+                                        String apiKey,
+                                        String providerModel,
+                                        ArrayNode messages,
+                                        int timeoutMs) throws Exception {
+        String normalizedEndpoint = normalizeClaudeEndpoint(endpoint);
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("model", providerModel);
+        body.put("max_tokens", 2048);
+        body.put("temperature", 0.2d);
+
+        String systemPrompt = toClaudeSystemPrompt(messages);
+        if (StringUtils.hasText(systemPrompt)) {
+            body.put("system", systemPrompt);
+        }
+        body.set("messages", toClaudeMessages(messages));
+
+        HttpRequest httpRequest = HttpRequest.newBuilder(URI.create(normalizedEndpoint))
+                .timeout(Duration.ofMillis(timeoutMs))
+                .header("Content-Type", "application/json")
+                .header("x-api-key", apiKey)
+                .header("anthropic-version", "2023-06-01")
+                .POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8))
+                .build();
+
+        JsonNode root = executeProviderRequest(model, httpRequest);
+        String content = extractProviderContent(root);
+        if (!StringUtils.hasText(content)) {
+            throw new BizException(503, providerLabel(model) + " 返回结果为空，请重试");
+        }
+        return content;
+    }
+
+    private JsonNode executeProviderRequest(String model, HttpRequest httpRequest) throws Exception {
+        HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            String providerErrorMessage = extractProviderErrorMessage(response.body());
+            if (StringUtils.hasText(providerErrorMessage)) {
+                throw new BizException(503, providerLabel(model) + " 调用失败(" + response.statusCode() + ")：" + providerErrorMessage);
+            }
+            throw new BizException(503, providerLabel(model) + " 服务调用失败(" + response.statusCode() + ")，请检查 API Key/模型/Endpoint 配置");
+        }
+        return objectMapper.readTree(response.body());
+    }
+
+    private ArrayNode toGeminiContents(ArrayNode messages) {
+        ArrayNode contents = objectMapper.createArrayNode();
+        if (messages == null || messages.isEmpty()) {
+            return contents;
+        }
+        for (JsonNode message : messages) {
+            String text = trim(message.path("content").asText(""));
+            if (!StringUtils.hasText(text)) {
+                continue;
+            }
+            String role = trim(message.path("role").asText("")).toLowerCase(Locale.ROOT);
+            String geminiRole = "assistant".equals(role) ? "model" : "user";
+
+            ObjectNode content = objectMapper.createObjectNode();
+            content.put("role", geminiRole);
+            ArrayNode parts = objectMapper.createArrayNode();
+            ObjectNode part = objectMapper.createObjectNode();
+            part.put("text", text);
+            parts.add(part);
+            content.set("parts", parts);
+            contents.add(content);
+        }
+        return contents;
+    }
+
+    private String toClaudeSystemPrompt(ArrayNode messages) {
+        if (messages == null || messages.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (JsonNode message : messages) {
+            String role = trim(message.path("role").asText("")).toLowerCase(Locale.ROOT);
+            if (!"system".equals(role)) {
+                continue;
+            }
+            String text = trim(message.path("content").asText(""));
+            if (!StringUtils.hasText(text)) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append("\n\n");
+            }
+            sb.append(text);
+        }
+        return trim(sb.toString());
+    }
+
+    private ArrayNode toClaudeMessages(ArrayNode messages) {
+        ArrayNode claudeMessages = objectMapper.createArrayNode();
+        if (messages == null || messages.isEmpty()) {
+            return claudeMessages;
+        }
+        for (JsonNode message : messages) {
+            String text = trim(message.path("content").asText(""));
+            if (!StringUtils.hasText(text)) {
+                continue;
+            }
+            String role = trim(message.path("role").asText("")).toLowerCase(Locale.ROOT);
+            if ("system".equals(role)) {
+                continue;
+            }
+            String claudeRole = "assistant".equals(role) ? "assistant" : "user";
+
+            ObjectNode item = objectMapper.createObjectNode();
+            item.put("role", claudeRole);
+            ArrayNode content = objectMapper.createArrayNode();
+            ObjectNode textNode = objectMapper.createObjectNode();
+            textNode.put("type", "text");
+            textNode.put("text", text);
+            content.add(textNode);
+            item.set("content", content);
+            claudeMessages.add(item);
+        }
+
+        if (claudeMessages.isEmpty()) {
+            ObjectNode fallback = objectMapper.createObjectNode();
+            fallback.put("role", "user");
+            ArrayNode content = objectMapper.createArrayNode();
+            ObjectNode textNode = objectMapper.createObjectNode();
+            textNode.put("type", "text");
+            textNode.put("text", "Please continue.");
+            content.add(textNode);
+            fallback.set("content", content);
+            claudeMessages.add(fallback);
+        }
+        return claudeMessages;
     }
 
     private String providerApiKey(String model) {
@@ -892,13 +1093,22 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         AiProviderProperties.Provider provider = provider(model);
         String configured = provider == null ? "" : trim(provider.getEndpoint());
         if (StringUtils.hasText(configured)) {
-            return normalizeCompletionEndpoint(configured);
+            return trim(configured);
         }
         if (MODEL_QWEN.equals(model)) {
             return "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
         }
         if (MODEL_KIMI.equals(model)) {
             return "https://api.moonshot.cn/v1/chat/completions";
+        }
+        if (MODEL_DEEPSEEK.equals(model)) {
+            return "https://api.deepseek.com/chat/completions";
+        }
+        if (MODEL_GEMINI.equals(model)) {
+            return "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
+        }
+        if (MODEL_CLAUDE.equals(model)) {
+            return "https://api.anthropic.com/v1/messages";
         }
         return "https://api.openai.com/v1/chat/completions";
     }
@@ -915,6 +1125,15 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         if (MODEL_KIMI.equals(model)) {
             return "moonshot-v1-8k";
         }
+        if (MODEL_DEEPSEEK.equals(model)) {
+            return "deepseek-chat";
+        }
+        if (MODEL_GEMINI.equals(model)) {
+            return "gemini-2.0-flash";
+        }
+        if (MODEL_CLAUDE.equals(model)) {
+            return "claude-3-5-sonnet-latest";
+        }
         return "gpt-4o-mini";
     }
 
@@ -926,7 +1145,16 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             return "Kimi";
         }
         if (MODEL_OPENAI.equals(model)) {
-            return "OpenAI";
+            return "ChatGPT (OpenAI)";
+        }
+        if (MODEL_DEEPSEEK.equals(model)) {
+            return "DeepSeek";
+        }
+        if (MODEL_GEMINI.equals(model)) {
+            return "Gemini";
+        }
+        if (MODEL_CLAUDE.equals(model)) {
+            return "Claude";
         }
         return "模型服务";
     }
@@ -947,6 +1175,45 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         return value + "/chat/completions";
     }
 
+    private String normalizeGeminiEndpoint(String endpoint, String providerModel) {
+        String value = trim(endpoint);
+        if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        if (value.contains("{model}")) {
+            value = value.replace("{model}", providerModel);
+        }
+        String lower = value.toLowerCase(Locale.ROOT);
+        if (lower.contains(":generatecontent")) {
+            return value;
+        }
+        if (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        if (lower.contains("/models/")) {
+            return value + ":generateContent";
+        }
+        return value + "/models/" + providerModel + ":generateContent";
+    }
+
+    private String normalizeClaudeEndpoint(String endpoint) {
+        String value = trim(endpoint);
+        if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        String lower = value.toLowerCase(Locale.ROOT);
+        if (lower.contains("/v1/messages")) {
+            return value;
+        }
+        if (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        if (lower.endsWith("/v1")) {
+            return value + "/messages";
+        }
+        return value + "/v1/messages";
+    }
+
     private String extractProviderErrorMessage(String body) {
         String normalized = trim(body);
         if (!StringUtils.hasText(normalized)) {
@@ -956,6 +1223,9 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             JsonNode root = objectMapper.readTree(normalized);
             String message = firstNonBlank(
                     root.path("error").path("message").asText(""),
+                    root.path("error").path("status").asText(""),
+                    root.path("error").path("type").asText(""),
+                    root.path("type").asText(""),
                     root.path("message").asText(""),
                     root.path("error_msg").asText(""),
                     root.path("msg").asText("")
@@ -980,6 +1250,24 @@ public class AiAssistantServiceImpl implements AiAssistantService {
             if (StringUtils.hasText(textContent)) {
                 return textContent;
             }
+        }
+
+        JsonNode candidates = root.path("candidates");
+        if (candidates.isArray() && candidates.size() > 0) {
+            String candidateContent = extractContentNodeText(candidates.path(0).path("content").path("parts"));
+            if (StringUtils.hasText(candidateContent)) {
+                return candidateContent;
+            }
+        }
+
+        String claudeContent = extractContentNodeText(root.path("content"));
+        if (StringUtils.hasText(claudeContent)) {
+            return claudeContent;
+        }
+
+        String completion = trim(root.path("completion").asText(""));
+        if (StringUtils.hasText(completion)) {
+            return completion;
         }
 
         String outputText = trim(root.path("output_text").asText(""));
@@ -1065,6 +1353,15 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         }
         if (MODEL_OPENAI.equals(model)) {
             return aiProviderProperties.getOpenai();
+        }
+        if (MODEL_DEEPSEEK.equals(model)) {
+            return aiProviderProperties.getDeepseek();
+        }
+        if (MODEL_GEMINI.equals(model)) {
+            return aiProviderProperties.getGemini();
+        }
+        if (MODEL_CLAUDE.equals(model)) {
+            return aiProviderProperties.getClaude();
         }
         return null;
     }
@@ -1202,4 +1499,3 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         private int remaining;
     }
 }
-

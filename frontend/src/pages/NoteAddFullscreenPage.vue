@@ -1,21 +1,19 @@
 <template>
-  <section class="note-add-page fade-in">
-    <h2>新建笔记</h2>
-    <div class="surface-card block">
-      <NoteForm
-        :model-value="formModel"
-        :language-options="languageOptions"
-        :tag-options="tagOptions"
-        :question-options="questionOptions"
-        :material-options="materialOptions"
-        submit-text="保存笔记"
-        :submitting="submitting"
-        :draft-key="draftKey"
-        fullscreen-target-path="/note/add/fullscreen"
-        @submit="onSubmit"
-        @cancel="$router.push('/note/list')"
-      />
-    </div>
+  <section class="note-add-fullscreen-page fade-in">
+    <NoteForm
+      :model-value="formModel"
+      :language-options="languageOptions"
+      :tag-options="tagOptions"
+      :question-options="questionOptions"
+      :material-options="materialOptions"
+      submit-text="保存笔记"
+      :submitting="submitting"
+      :draft-key="draftKey"
+      :force-fullscreen="true"
+      fullscreen-exit-path="/note/add"
+      @submit="onSubmit"
+      @cancel="$router.push('/note/add')"
+    />
   </section>
 </template>
 
@@ -120,26 +118,15 @@ loadMaterialOptions()
 </script>
 
 <style scoped>
-.note-add-page {
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.note-add-fullscreen-page {
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
   overflow: hidden;
+  background: var(--bg);
 }
 
-h2 {
-  margin: 0;
-  color: var(--primary);
-  font-size: clamp(24px, 2.2vw, 32px);
-  line-height: 1.2;
-}
-
-.block {
-  flex: 1;
-  min-height: 0;
-  padding: 12px;
-  overflow: hidden;
+.note-add-fullscreen-page :deep(.note-compose) {
+  height: 100vh;
 }
 </style>

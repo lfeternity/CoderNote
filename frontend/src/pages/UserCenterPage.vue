@@ -281,7 +281,7 @@ h2 {
 
 .module-subtitle {
   margin: 0 0 10px;
-  color: #5f7197;
+  color: var(--text-sub);
 }
 
 @media (max-width: 960px) {

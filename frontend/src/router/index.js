@@ -19,6 +19,7 @@ import MaterialEditPage from '../pages/MaterialEditPage.vue'
 import MaterialDetailPage from '../pages/MaterialDetailPage.vue'
 import NoteListPage from '../pages/NoteListPage.vue'
 import NoteAddPage from '../pages/NoteAddPage.vue'
+import NoteAddFullscreenPage from '../pages/NoteAddFullscreenPage.vue'
 import NoteEditPage from '../pages/NoteEditPage.vue'
 import NoteDetailPage from '../pages/NoteDetailPage.vue'
 import TagListPage from '../pages/TagListPage.vue'
@@ -35,6 +36,7 @@ const routes = [
   { path: '/login', component: LoginPage, meta: { guestOnly: true } },
   { path: '/register', component: RegisterPage, meta: { guestOnly: true } },
   { path: '/oauth/bind', component: OauthBindPage, meta: { guestOnly: true } },
+  { path: '/note/add/fullscreen', component: NoteAddFullscreenPage, meta: { requiresAuth: true } },
   {
     path: '/',
     component: AppLayout,
@@ -43,23 +45,27 @@ const routes = [
       { path: 'user/center', component: UserCenterPage, meta: { requiresAuth: true } },
       { path: 'user/change-password', component: ChangePasswordPage, meta: { requiresAuth: true } },
 
-      { path: 'error-question/list', component: QuestionListPage, meta: { requiresAuth: true, disableViewFadeIn: true } },
+      {
+        path: 'error-question/list',
+        component: QuestionListPage,
+        meta: { requiresAuth: true, disableViewFadeIn: true, disableViewScroll: true }
+      },
       { path: 'error-question/add', component: QuestionAddPage, meta: { requiresAuth: true } },
       { path: 'error-question/update/:questionId', component: QuestionEditPage, meta: { requiresAuth: true } },
       { path: 'error-question/detail/:questionId', component: QuestionDetailPage, meta: { requiresAuth: true } },
 
-      { path: 'study-material/list', component: MaterialListPage, meta: { requiresAuth: true } },
-      { path: 'study-material/favorite', component: MaterialFavoritePage, meta: { requiresAuth: true } },
+      { path: 'study-material/list', component: MaterialListPage, meta: { requiresAuth: true, disableViewScroll: true } },
+      { path: 'study-material/favorite', component: MaterialFavoritePage, meta: { requiresAuth: true, disableViewScroll: true } },
       { path: 'study-material/add', component: MaterialAddPage, meta: { requiresAuth: true } },
       { path: 'study-material/update/:materialId', component: MaterialEditPage, meta: { requiresAuth: true } },
       { path: 'study-material/detail/:materialId', component: MaterialDetailPage, meta: { requiresAuth: true } },
 
-      { path: 'note/list', component: NoteListPage, meta: { requiresAuth: true } },
-      { path: 'note/add', component: NoteAddPage, meta: { requiresAuth: true } },
+      { path: 'note/list', component: NoteListPage, meta: { requiresAuth: true, disableViewScroll: true } },
+      { path: 'note/add', component: NoteAddPage, meta: { requiresAuth: true, disableViewScroll: true } },
       { path: 'note/update/:noteId', component: NoteEditPage, meta: { requiresAuth: true } },
       { path: 'note/detail/:noteId', component: NoteDetailPage, meta: { requiresAuth: true } },
 
-      { path: 'tag/list', component: TagListPage, meta: { requiresAuth: true } },
+      { path: 'tag/list', component: TagListPage, meta: { requiresAuth: true, disableViewScroll: true } },
       { path: 'statistics/overview', component: StatisticsPage, meta: { requiresAuth: true } },
       { path: 'review/center', component: ReviewCenterPage, meta: { requiresAuth: true } },
       { path: 'review/mode', component: ReviewModePage, meta: { requiresAuth: true } },

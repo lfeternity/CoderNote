@@ -75,14 +75,7 @@
       append-to-body
     >
       <el-form label-width="92px">
-        <el-form-item label="模型选择">
-          <div class="model-select-row">
-            <el-select v-model="selectedModel" style="width: 220px">
-              <el-option v-for="item in modelOptions" :key="item.value" :label="item.label" :value="item.value" />
-            </el-select>
-            <el-button plain @click="openModelConfigDialog">模型配置</el-button>
-          </div>
-        </el-form-item>
+        <p class="prompt-config-tip">将复用 AI 助手当前模型配置</p>
         <el-form-item :label="promptMode === 'solve' ? '题目信息' : '总结内容'">
           <el-input
             v-model="promptText"
@@ -984,12 +977,12 @@ function openAiPrompt(mode) {
   if (!requireLogin()) {
     return
   }
+  syncRuntimeConfigFromStorage({ syncModel: true })
   promptMode.value = mode
   promptText.value = ''
   aiError.value = ''
   aiMarkdown.value = ''
   promptDialogVisible.value = true
-  ensureModels()
   closePanel()
 }
 
@@ -999,8 +992,6 @@ async function submitAiPrompt() {
     ElMessage.warning('请输入内容')
     return
   }
-
-  await ensureModels()
 
   promptDialogVisible.value = false
   resultDialogVisible.value = true
@@ -1012,8 +1003,7 @@ async function submitAiPrompt() {
     if (promptMode.value === 'solve') {
       const data = await analyzeQuestionByAi({
         contextDescription: text,
-        language: 'Java',
-        model: selectedModel.value
+        language: 'Java'
       })
       aiMarkdown.value = data?.markdown || data?.solutionText || '未生成可用结果，请补充上下文后重试。'
       return
@@ -1023,8 +1013,7 @@ async function submitAiPrompt() {
       title: '悬浮按钮输入',
       content: text,
       language: 'Java',
-      summaryType: 'CORE_EXTRACT',
-      model: selectedModel.value
+      summaryType: 'CORE_EXTRACT'
     })
     aiMarkdown.value = data?.markdown || data?.summaryText || '未生成可用结果，请补充内容后重试。'
   } catch (error) {
@@ -1425,12 +1414,12 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   background:
     radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.38) 30%, rgba(255, 255, 255, 0) 56%),
-    linear-gradient(160deg, #9adfff 0%, #67c4ff 44%, #4297ee 100%);
-  color: #f8fdff;
+    linear-gradient(160deg, #e2b09a 0%, #cf8461 44%, #ba6646 100%);
+  color: #fff8f2;
   box-shadow:
     inset 0 2px 6px rgba(255, 255, 255, 0.55),
-    inset 0 -10px 16px rgba(49, 124, 199, 0.24),
-    0 14px 30px rgba(52, 137, 218, 0.28);
+    inset 0 -10px 16px rgba(131, 74, 51, 0.26),
+    0 14px 30px rgba(109, 66, 47, 0.3);
   overflow: visible;
   isolation: isolate;
   backdrop-filter: blur(1.5px);
@@ -1467,8 +1456,8 @@ onBeforeUnmount(() => {
   transform: translateY(-1px) scale(1.05);
   box-shadow:
     inset 0 2px 7px rgba(255, 255, 255, 0.62),
-    inset 0 -10px 18px rgba(45, 118, 190, 0.3),
-    0 18px 36px rgba(45, 126, 209, 0.32);
+    inset 0 -10px 18px rgba(126, 69, 47, 0.32),
+    0 18px 36px rgba(109, 62, 43, 0.34);
   filter: saturate(1.05);
 }
 
@@ -1499,9 +1488,9 @@ onBeforeUnmount(() => {
   height: 22px;
   padding: 0 6px;
   border-radius: 999px;
-  border: 2px solid #fff;
-  background: #ef4444;
-  color: #fff;
+  border: 2px solid #fff8f2;
+  background: var(--danger);
+  color: #fff8f2;
   font-size: 12px;
   font-weight: 700;
   line-height: 18px;
@@ -1511,27 +1500,27 @@ onBeforeUnmount(() => {
 
 
 :global(:root[data-theme='dark']) .float-fab {
-  border-color: rgba(177, 219, 255, 0.48);
+  border-color: rgba(214, 167, 146, 0.46);
   background:
-    radial-gradient(circle at 26% 22%, rgba(224, 241, 255, 0.46) 0%, rgba(224, 241, 255, 0.08) 34%, rgba(224, 241, 255, 0) 58%),
-    linear-gradient(160deg, #3d669d 0%, #305796 46%, #29467f 100%);
+    radial-gradient(circle at 26% 22%, rgba(255, 227, 214, 0.42) 0%, rgba(255, 227, 214, 0.09) 34%, rgba(255, 227, 214, 0) 58%),
+    linear-gradient(160deg, #7a4a38 0%, #643b2d 46%, #4f2f24 100%);
   box-shadow:
-    inset 0 2px 5px rgba(211, 233, 255, 0.24),
-    inset 0 -8px 14px rgba(9, 26, 49, 0.5),
+    inset 0 2px 5px rgba(255, 229, 219, 0.24),
+    inset 0 -8px 14px rgba(34, 18, 12, 0.52),
     0 14px 32px rgba(0, 0, 0, 0.45);
 }
 
 :global(:root[data-theme='dark']) .float-item {
-  background: rgba(122, 162, 255, 0.08);
+  background: rgba(201, 100, 66, 0.12);
 }
 
 :global(:root[data-theme='dark']) .float-item:hover {
-  border-color: rgba(122, 162, 255, 0.65);
-  background: rgba(122, 162, 255, 0.16);
+  border-color: rgba(201, 100, 66, 0.56);
+  background: rgba(201, 100, 66, 0.18);
 }
 
 :global(:root[data-theme='dark']) .float-item-icon {
-  background: rgba(122, 162, 255, 0.2);
+  background: rgba(201, 100, 66, 0.24);
 }
 .float-panel {
   position: fixed;
@@ -1591,7 +1580,7 @@ onBeforeUnmount(() => {
   min-height: 80px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: rgba(30, 64, 175, 0.04);
+  background: rgba(201, 100, 66, 0.05);
   display: inline-flex;
   flex-direction: column;
   justify-content: center;
@@ -1603,15 +1592,15 @@ onBeforeUnmount(() => {
 
 .float-item:hover {
   transform: translateY(-1px) scale(1.03);
-  border-color: #96b5ff;
-  background: rgba(30, 64, 175, 0.1);
+  border-color: var(--color-ring-deep);
+  background: rgba(201, 100, 66, 0.12);
 }
 
 .float-item-icon {
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  background: rgba(30, 64, 175, 0.12);
+  background: rgba(201, 100, 66, 0.14);
   color: var(--primary);
   display: inline-flex;
   align-items: center;
@@ -1642,7 +1631,7 @@ onBeforeUnmount(() => {
   width: 100%;
   border: none;
   border-radius: 8px;
-  background: rgba(30, 64, 175, 0.08);
+  background: rgba(201, 100, 66, 0.1);
   color: var(--text-main);
   min-height: 32px;
   cursor: pointer;
@@ -1651,7 +1640,7 @@ onBeforeUnmount(() => {
 }
 
 .fab-context-item:hover {
-  background: rgba(30, 64, 175, 0.16);
+  background: rgba(201, 100, 66, 0.2);
 }
 
 .ai-result-wrap {
@@ -1659,10 +1648,10 @@ onBeforeUnmount(() => {
 }
 
 .ai-result-error {
-  border: 1px solid #fecaca;
+  border: 1px solid color-mix(in srgb, var(--danger) 38%, var(--border));
   border-radius: 10px;
-  background: #fef2f2;
-  color: #b91c1c;
+  background: color-mix(in srgb, var(--danger) 11%, var(--surface));
+  color: var(--danger);
   padding: 10px;
 }
 
@@ -1674,13 +1663,18 @@ onBeforeUnmount(() => {
 .export-tip {
   margin: 8px 0 0;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-sub);
 }
 
-.model-select-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.prompt-config-tip {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-soft) 68%, var(--surface));
+  color: var(--text-sub);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .model-config-tip {
@@ -1712,10 +1706,10 @@ onBeforeUnmount(() => {
 .chat-message-list {
   max-height: 46vh;
   overflow-y: auto;
-  border: 1px solid #dbe3ee;
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 10px;
-  background: #f8fbff;
+  background: color-mix(in srgb, var(--surface-soft) 72%, var(--surface));
 }
 
 .chat-message-row {
@@ -1735,20 +1729,20 @@ onBeforeUnmount(() => {
   max-width: 88%;
   border-radius: 12px;
   padding: 8px 10px;
-  border: 1px solid #dbe3ee;
-  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
 }
 
 .chat-message-row.is-user .chat-message-bubble {
-  background: #eaf2ff;
-  border-color: #bdd2ff;
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--primary) 46%, var(--border-soft));
 }
 
 .chat-loading-row {
-  border: 1px solid #dbe3ee;
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 10px;
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .chat-input-area {
@@ -1785,10 +1779,6 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-
-
-
-
 
 
 
