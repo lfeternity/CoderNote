@@ -16,8 +16,13 @@ import com.codernote.platform.mapper.UserOauthBindMapper;
 import com.codernote.platform.service.AvatarService;
 import com.codernote.platform.service.UserService;
 import com.codernote.platform.util.PasswordUtil;
+import org.springframework.dao.DuplicateKeyException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
 
 import javax.imageio.ImageIO;
@@ -30,12 +35,13 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -51,19 +57,25 @@ public class UserServiceImpl implements UserService {
     private static final int LOGIN_FAIL_LIMIT_COUNT = 5;
     private static final long LOGIN_FAIL_WINDOW_MILLIS = 10 * 60 * 1000L;
     private static final long LOGIN_BLOCK_MILLIS = 10 * 60 * 1000L;
-    private static final int LOGIN_FAIL_CACHE_CLEANUP_THRESHOLD = 2048;
+    private static final String LOGIN_FAIL_KEY_PREFIX = "auth:login:fail:";
+    private static final String LOGIN_BLOCK_KEY_PREFIX = "auth:login:block:";
+    private static final long REDIS_KEY_NO_EXPIRE_TTL = -1L;
+
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserMapper userMapper;
     private final UserOauthBindMapper userOauthBindMapper;
     private final AvatarService avatarService;
-    private final Map<String, LoginFailRecord> loginFailRecordMap = new ConcurrentHashMap<>();
+    private final StringRedisTemplate stringRedisTemplate;
 
     public UserServiceImpl(UserMapper userMapper,
                            UserOauthBindMapper userOauthBindMapper,
-                           AvatarService avatarService) {
+                           AvatarService avatarService,
+                           StringRedisTemplate stringRedisTemplate) {
         this.userMapper = userMapper;
         this.userOauthBindMapper = userOauthBindMapper;
         this.avatarService = avatarService;
+        this.stringRedisTemplate = stringRedisTemplate;
     }
 
     @Override
@@ -110,7 +122,11 @@ public class UserServiceImpl implements UserService {
         user.setRemark(StringUtils.hasText(request.getRemark()) ? request.getRemark().trim() : null);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
-        userMapper.insert(user);
+        try {
+            userMapper.insert(user);
+        } catch (DuplicateKeyException ex) {
+            throw new BizException(400, "Nickname already exists");
+        }
     }
 
     @Override
@@ -135,7 +151,7 @@ public class UserServiceImpl implements UserService {
 
         clearLoginFailRecord(throttleKey);
         upgradePasswordHashIfNeeded(user, request.getPassword());
-        HttpSession session = servletRequest.getSession(true);
+        HttpSession session = rotateLoginSession(servletRequest);
         session.setAttribute(Constants.SESSION_USER_ID, user.getId());
         session.setAttribute(Constants.SESSION_USER_NICKNAME, user.getNickname());
     }
@@ -311,46 +327,64 @@ public class UserServiceImpl implements UserService {
     }
 
     private long getBlockedRemainingMillis(String throttleKey) {
-        long now = System.currentTimeMillis();
-        LoginFailRecord record = loginFailRecordMap.get(throttleKey);
-        if (record == null) {
+        String blockKey = loginBlockRedisKey(throttleKey);
+        try {
+            Long ttl = stringRedisTemplate.getExpire(blockKey, TimeUnit.MILLISECONDS);
+            if (ttl == null || ttl <= 0) {
+                return 0L;
+            }
+            return ttl;
+        } catch (Exception ex) {
+            log.warn("Failed to query login block ttl key={}", blockKey, ex);
             return 0L;
         }
-        if (record.getBlockedUntil() > now) {
-            return record.getBlockedUntil() - now;
-        }
-        if (record.getBlockedUntil() > 0 && record.getBlockedUntil() <= now) {
-            loginFailRecordMap.remove(throttleKey, record);
-        }
-        return 0L;
     }
 
     private boolean recordLoginFailed(String throttleKey) {
-        long now = System.currentTimeMillis();
-        final boolean[] blocked = {false};
-        loginFailRecordMap.compute(throttleKey, (key, existing) -> {
-            LoginFailRecord base = existing;
-            if (base != null && base.getBlockedUntil() > now) {
-                blocked[0] = true;
-                return base;
+        String blockKey = loginBlockRedisKey(throttleKey);
+        String failKey = loginFailRedisKey(throttleKey);
+        try {
+            Long blockedTtl = stringRedisTemplate.getExpire(blockKey, TimeUnit.MILLISECONDS);
+            if (blockedTtl != null && blockedTtl > 0) {
+                return true;
             }
-            if (base == null || base.isWindowExpired(now)) {
-                base = new LoginFailRecord(0, now, 0);
+            // TTL = -1 means key exists but has no expiry, repair it in-place.
+            if (Long.valueOf(REDIS_KEY_NO_EXPIRE_TTL).equals(blockedTtl)) {
+                stringRedisTemplate.expire(blockKey, LOGIN_BLOCK_MILLIS, TimeUnit.MILLISECONDS);
+                return true;
             }
 
-            int nextFailCount = base.getFailCount() + 1;
-            if (nextFailCount >= LOGIN_FAIL_LIMIT_COUNT) {
-                blocked[0] = true;
-                return new LoginFailRecord(0, 0, now + LOGIN_BLOCK_MILLIS);
+            Long failCount = stringRedisTemplate.opsForValue().increment(failKey);
+            if (failCount == null) {
+                return false;
             }
-            return new LoginFailRecord(nextFailCount, base.getFirstFailAt(), 0);
-        });
-        cleanupLoginFailCacheIfNeeded(now);
-        return blocked[0];
+            Long failTtl = stringRedisTemplate.getExpire(failKey, TimeUnit.MILLISECONDS);
+            if (failCount == 1L || failTtl == null || failTtl < 0) {
+                stringRedisTemplate.expire(failKey, LOGIN_FAIL_WINDOW_MILLIS, TimeUnit.MILLISECONDS);
+            }
+            if (failCount >= LOGIN_FAIL_LIMIT_COUNT) {
+                stringRedisTemplate.opsForValue().set(blockKey, "1", LOGIN_BLOCK_MILLIS, TimeUnit.MILLISECONDS);
+                stringRedisTemplate.delete(failKey);
+                return true;
+            }
+            return false;
+        } catch (Exception ex) {
+            // Degrade gracefully when Redis is unavailable.
+            log.warn("Failed to record login throttle key={} blockKey={} failKey={}",
+                    hashThrottleKey(throttleKey), blockKey, failKey, ex);
+            return false;
+        }
     }
 
     private void clearLoginFailRecord(String throttleKey) {
-        loginFailRecordMap.remove(throttleKey);
+        try {
+            stringRedisTemplate.delete(Arrays.asList(
+                    loginFailRedisKey(throttleKey),
+                    loginBlockRedisKey(throttleKey)
+            ));
+        } catch (Exception ex) {
+            log.warn("Failed to clear login throttle key={}", hashThrottleKey(throttleKey), ex);
+        }
     }
 
     private void upgradePasswordHashIfNeeded(User user, String rawPassword) {
@@ -362,11 +396,17 @@ public class UserServiceImpl implements UserService {
         userMapper.updateById(user);
     }
 
-    private void cleanupLoginFailCacheIfNeeded(long now) {
-        if (loginFailRecordMap.size() < LOGIN_FAIL_CACHE_CLEANUP_THRESHOLD) {
-            return;
-        }
-        loginFailRecordMap.entrySet().removeIf(entry -> entry.getValue().isExpired(now));
+    private String loginFailRedisKey(String throttleKey) {
+        return LOGIN_FAIL_KEY_PREFIX + hashThrottleKey(throttleKey);
+    }
+
+    private String loginBlockRedisKey(String throttleKey) {
+        return LOGIN_BLOCK_KEY_PREFIX + hashThrottleKey(throttleKey);
+    }
+
+    private String hashThrottleKey(String rawKey) {
+        String normalized = rawKey == null ? "" : rawKey;
+        return DigestUtils.md5DigestAsHex(normalized.getBytes(StandardCharsets.UTF_8));
     }
 
     private BizException buildLoginRateLimitException(long blockedRemainingMillis) {
@@ -375,40 +415,22 @@ public class UserServiceImpl implements UserService {
         return new BizException(429, "Too many failed login attempts, please retry after " + seconds + " seconds");
     }
 
-    private static final class LoginFailRecord {
-        private final int failCount;
-        private final long firstFailAt;
-        private final long blockedUntil;
-
-        private LoginFailRecord(int failCount, long firstFailAt, long blockedUntil) {
-            this.failCount = failCount;
-            this.firstFailAt = firstFailAt;
-            this.blockedUntil = blockedUntil;
+    private HttpSession rotateLoginSession(HttpServletRequest servletRequest) {
+        HttpSession current = servletRequest.getSession(false);
+        if (current == null) {
+            return servletRequest.getSession(true);
         }
-
-        private int getFailCount() {
-            return failCount;
-        }
-
-        private long getFirstFailAt() {
-            return firstFailAt;
-        }
-
-        private long getBlockedUntil() {
-            return blockedUntil;
-        }
-
-        private boolean isWindowExpired(long now) {
-            return blockedUntil <= 0
-                    && firstFailAt > 0
-                    && now - firstFailAt > LOGIN_FAIL_WINDOW_MILLIS;
-        }
-
-        private boolean isExpired(long now) {
-            if (blockedUntil > 0) {
-                return blockedUntil <= now;
+        try {
+            servletRequest.changeSessionId();
+            HttpSession rotated = servletRequest.getSession(false);
+            if (rotated != null) {
+                return rotated;
             }
-            return firstFailAt <= 0 || now - firstFailAt > LOGIN_FAIL_WINDOW_MILLIS;
+        } catch (IllegalStateException ignore) {
+            // fall through to invalidate + recreate.
         }
+        current.invalidate();
+        return servletRequest.getSession(true);
     }
+
 }

@@ -1,5 +1,11 @@
 server:
   port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: ${SESSION_COOKIE_SAME_SITE:Lax}
 
 spring:
   servlet:
@@ -13,6 +19,24 @@ spring:
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/coder_note?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: ${REDIS_DB:0}
+    timeout: ${REDIS_TIMEOUT:2000ms}
+    connect-timeout: ${REDIS_CONNECT_TIMEOUT:2000ms}
+    lettuce:
+      pool:
+        max-active: ${REDIS_POOL_MAX_ACTIVE:32}
+        max-idle: ${REDIS_POOL_MAX_IDLE:16}
+        min-idle: ${REDIS_POOL_MIN_IDLE:4}
+        max-wait: ${REDIS_POOL_MAX_WAIT:2000ms}
+  session:
+    store-type: redis
+    timeout: ${SESSION_TIMEOUT:30m}
+    redis:
+      namespace: ${REDIS_SESSION_NAMESPACE:codernote:session}
   jackson:
     property-naming-strategy: SNAKE_CASE
     date-format: yyyy-MM-dd HH:mm:ss
@@ -24,15 +48,22 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: ${MYBATIS_LOG_IMPL:org.apache.ibatis.logging.nologging.NoLoggingImpl}
   global-config:
     db-config:
       id-type: auto
 
 knife4j:
-  enable: true
+  enable: ${KNIFE4J_ENABLE:false}
 
 app:
+  security:
+    cors:
+      allowed-origins: ${APP_SECURITY_CORS_ALLOWED_ORIGINS:http://127.0.0.1:5173,http://localhost:5173}
+    csrf:
+      enabled: ${APP_SECURITY_CSRF_ENABLED:true}
+      cookie-secure: ${APP_SECURITY_CSRF_COOKIE_SECURE:false}
+      cookie-same-site: ${APP_SECURITY_CSRF_COOKIE_SAME_SITE:Lax}
   upload:
     base-dir: ${APP_UPLOAD_BASE_DIR:uploads}
   avatar:
@@ -43,6 +74,8 @@ app:
   ai:
     default-model: SAFE_GPT_SIM
     timeout-ms: 60000
+    allow-runtime-model-config: ${APP_AI_ALLOW_RUNTIME_MODEL_CONFIG:false}
+    runtime-allowed-hosts: ${APP_AI_RUNTIME_ALLOWED_HOSTS:api.openai.com,dashscope.aliyuncs.com,api.moonshot.cn,api.deepseek.com,generativelanguage.googleapis.com,api.anthropic.com}
     qwen:
       api-key: ${QWEN_API_KEY:}
       endpoint: ${QWEN_ENDPOINT:https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions}
@@ -88,3 +121,17 @@ app:
   note-version:
     max-versions-per-note: 50
     content-size-limit-bytes: 5242880
+  cache:
+    statistics-overview-ttl-seconds: ${APP_CACHE_STATISTICS_OVERVIEW_TTL_SECONDS:30}
+    statistics-overview-lock-seconds: ${APP_CACHE_STATISTICS_OVERVIEW_LOCK_SECONDS:3}
+    statistics-overview-max-payload-bytes: ${APP_CACHE_STATISTICS_OVERVIEW_MAX_PAYLOAD_BYTES:131072}
+    search-ttl-seconds: ${APP_CACHE_SEARCH_TTL_SECONDS:20}
+    search-lock-seconds: ${APP_CACHE_SEARCH_LOCK_SECONDS:3}
+    search-max-page-size: ${APP_CACHE_SEARCH_MAX_PAGE_SIZE:50}
+    search-max-page-no: ${APP_CACHE_SEARCH_MAX_PAGE_NO:1000}
+    search-max-cached-page-no: ${APP_CACHE_SEARCH_MAX_CACHED_PAGE_NO:10}
+    search-max-keyword-length: ${APP_CACHE_SEARCH_MAX_KEYWORD_LENGTH:64}
+    search-max-payload-bytes: ${APP_CACHE_SEARCH_MAX_PAYLOAD_BYTES:262144}
+  schedule:
+    review-daily-cron: ${APP_SCHEDULE_REVIEW_DAILY_CRON:0 0 0 * * ?}
+    review-daily-lock-seconds: ${APP_SCHEDULE_REVIEW_DAILY_LOCK_SECONDS:3600}

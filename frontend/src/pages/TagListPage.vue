@@ -52,13 +52,14 @@
       </div>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? '新增标签' : '编辑标签'" width="520px">
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? '新增标签' : '编辑标签'" width="520px" class="tag-edit-dialog">
       <el-form :model="dialogForm" label-width="90px">
         <el-form-item label="标签名称">
           <el-input v-model="dialogForm.name" placeholder="请输入标签名" />
         </el-form-item>
         <el-form-item label="标签封面">
           <CoverPicker
+            class="tag-cover-picker"
             v-model="dialogForm.coverPath"
             biz-type="tag"
             preview-label="标签封面预览"
@@ -244,6 +245,18 @@ h2 {
 
 .tag-hover-actions {
   justify-content: flex-end;
+}
+
+:deep(.tag-cover-picker.cover-picker) {
+  gap: 8px;
+}
+
+:deep(.tag-cover-picker.cover-picker .cover-preview) {
+  width: min(100%, 170px);
+}
+
+:deep(.tag-cover-picker.cover-picker .cover-tip) {
+  display: none;
 }
 
 @media (max-width: 900px) {

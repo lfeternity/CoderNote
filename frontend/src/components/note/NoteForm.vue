@@ -217,7 +217,7 @@
           <button class="tool-more-btn" type="button">更多</button>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item v-if="isEditMode" command="change-cover">更换封面</el-dropdown-item>
+              <el-dropdown-item command="change-cover">更换封面</el-dropdown-item>
               <el-dropdown-item command="clear-draft">清理草稿</el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -815,8 +815,6 @@ const draftStorageKey = computed(() => buildDraftStorageKey({
   bizType: DRAFT_BIZ_TYPE,
   bizId: props.draftKey || 'new'
 }))
-const isEditMode = computed(() => String(props.draftKey || '').startsWith('edit_'))
-
 const draftStatusText = computed(() => {
   if (draftStatus.value === 'saving') return '自动保存草稿中...'
   if (draftStatus.value === 'saved') return '草稿已自动保存'

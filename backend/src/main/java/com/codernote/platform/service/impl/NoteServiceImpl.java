@@ -31,11 +31,13 @@ import com.codernote.platform.mapper.NoteVersionOperationLogMapper;
 import com.codernote.platform.mapper.StudyMaterialMapper;
 import com.codernote.platform.mapper.StudyNoteMapper;
 import com.codernote.platform.mapper.TagMapper;
+import com.codernote.platform.service.CacheVersionService;
 import com.codernote.platform.service.NoteService;
 import com.codernote.platform.service.ReviewService;
 import com.codernote.platform.service.TagRelationHelperService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -75,6 +77,7 @@ public class NoteServiceImpl implements NoteService {
     private final TagMapper tagMapper;
     private final TagRelationHelperService tagRelationHelperService;
     private final ReviewService reviewService;
+    private final CacheVersionService cacheVersionService;
     private final NoteVersionProperties noteVersionProperties;
     private final ObjectMapper objectMapper;
 
@@ -89,6 +92,7 @@ public class NoteServiceImpl implements NoteService {
                            TagMapper tagMapper,
                            TagRelationHelperService tagRelationHelperService,
                            ReviewService reviewService,
+                           CacheVersionService cacheVersionService,
                            NoteVersionProperties noteVersionProperties,
                            ObjectMapper objectMapper) {
         this.noteMapper = noteMapper;
@@ -102,6 +106,7 @@ public class NoteServiceImpl implements NoteService {
         this.tagMapper = tagMapper;
         this.tagRelationHelperService = tagRelationHelperService;
         this.reviewService = reviewService;
+        this.cacheVersionService = cacheVersionService;
         this.noteVersionProperties = noteVersionProperties;
         this.objectMapper = objectMapper;
     }
@@ -136,6 +141,7 @@ public class NoteServiceImpl implements NoteService {
         replaceMaterialLinks(userId, note.getId(), request.getManualMaterialIds());
         createNoteVersion(userId, note.getId(), title, content, language, tagNames,
                 resolveVersionSummary(request.getVersionSummary(), content));
+        cacheVersionService.bumpSearchForUser(userId);
         return note.getId();
     }
 
@@ -177,6 +183,7 @@ public class NoteServiceImpl implements NoteService {
             createNoteVersion(userId, noteId, title, content, language, tagNames,
                     resolveVersionSummary(request.getVersionSummary(), content));
         }
+        cacheVersionService.bumpSearchForUser(userId);
     }
 
     @Override
@@ -190,6 +197,7 @@ public class NoteServiceImpl implements NoteService {
         noteFavoriteMapper.delete(new LambdaQueryWrapper<NoteFavorite>()
                 .eq(NoteFavorite::getNoteId, noteId));
         reviewService.removePlanByContent(userId, ReviewContentType.NOTE, noteId);
+        cacheVersionService.bumpSearchForUser(userId);
     }
 
     @Override
@@ -242,6 +250,7 @@ public class NoteServiceImpl implements NoteService {
         if (StringUtils.hasText(tag)) {
             Tag exactTag = tagMapper.selectOne(new LambdaQueryWrapper<Tag>()
                     .eq(Tag::getName, tag.trim())
+                    .eq(Tag::getCreatorUserId, userId)
                     .last("limit 1"));
             if (exactTag == null) {
                 return PageResult.empty(pageNum, size);
@@ -259,6 +268,7 @@ public class NoteServiceImpl implements NoteService {
         if (StringUtils.hasText(keyword)) {
             String key = keyword.trim();
             List<Tag> keywordTags = tagMapper.selectList(new LambdaQueryWrapper<Tag>()
+                    .eq(Tag::getCreatorUserId, userId)
                     .like(Tag::getName, key));
             Set<Long> keywordTagNoteIds = keywordTags.isEmpty()
                     ? Collections.emptySet()
@@ -477,7 +487,12 @@ public class NoteServiceImpl implements NoteService {
         favorite.setUserId(userId);
         favorite.setNoteId(note.getId());
         favorite.setCreatedAt(LocalDateTime.now());
-        noteFavoriteMapper.insert(favorite);
+        try {
+            noteFavoriteMapper.insert(favorite);
+        } catch (DuplicateKeyException ignore) {
+            // Concurrent favorite requests can race; treat as idempotent success.
+        }
+        cacheVersionService.bumpSearchForUser(userId);
     }
 
     @Override
@@ -487,6 +502,7 @@ public class NoteServiceImpl implements NoteService {
         noteFavoriteMapper.delete(new LambdaQueryWrapper<NoteFavorite>()
                 .eq(NoteFavorite::getUserId, userId)
                 .eq(NoteFavorite::getNoteId, noteId));
+        cacheVersionService.bumpSearchForUser(userId);
     }
 
     @Override
@@ -518,8 +534,13 @@ public class NoteServiceImpl implements NoteService {
             link.setUserId(userId);
             link.setNoteId(noteId);
             link.setQuestionId(questionId);
-            noteQuestionLinkMapper.insert(link);
+            try {
+                noteQuestionLinkMapper.insert(link);
+            } catch (DuplicateKeyException ignore) {
+                // Ignore concurrent duplicate relation insert.
+            }
         }
+        cacheVersionService.bumpSearchForUser(userId);
     }
 
     @Override
@@ -551,8 +572,13 @@ public class NoteServiceImpl implements NoteService {
             link.setUserId(userId);
             link.setNoteId(noteId);
             link.setMaterialId(materialId);
-            noteMaterialLinkMapper.insert(link);
+            try {
+                noteMaterialLinkMapper.insert(link);
+            } catch (DuplicateKeyException ignore) {
+                // Ignore concurrent duplicate relation insert.
+            }
         }
+        cacheVersionService.bumpSearchForUser(userId);
     }
 
     @Override
@@ -564,6 +590,7 @@ public class NoteServiceImpl implements NoteService {
         request.setContentId(noteId);
         request.setMasteryStatus(masteryStatus);
         reviewService.updateContentStatus(userId, request);
+        cacheVersionService.bumpSearchForUser(userId);
     }
 
     @Override
@@ -621,6 +648,7 @@ public class NoteServiceImpl implements NoteService {
         operationLog.setRemark("恢复自 v" + sourceVersion.getVersionNo() + " 版本");
         operationLog.setCreatedAt(LocalDateTime.now());
         noteVersionOperationLogMapper.insert(operationLog);
+        cacheVersionService.bumpSearchForUser(userId);
     }
 
     @Override
@@ -741,20 +769,30 @@ public class NoteServiceImpl implements NoteService {
                                   String language,
                                   List<String> tagNames,
                                   String summary) {
-        int nextVersionNo = nextVersionNo(userId, noteId);
-        NoteVersion version = new NoteVersion();
-        version.setUserId(userId);
-        version.setNoteId(noteId);
-        version.setVersionNo(nextVersionNo);
-        version.setTitle(title);
-        version.setContent(content);
-        version.setLanguage(language);
-        version.setTagNamesJson(encodeTagNames(normalizeTagNames(tagNames)));
-        version.setSummary(trimSummary(summary));
-        version.setCreatedAt(LocalDateTime.now());
-        noteVersionMapper.insert(version);
-        trimOldVersions(userId, noteId);
-        return nextVersionNo;
+        final int maxRetry = 3;
+        for (int i = 0; i < maxRetry; i++) {
+            int nextVersionNo = nextVersionNo(userId, noteId);
+            NoteVersion version = new NoteVersion();
+            version.setUserId(userId);
+            version.setNoteId(noteId);
+            version.setVersionNo(nextVersionNo);
+            version.setTitle(title);
+            version.setContent(content);
+            version.setLanguage(language);
+            version.setTagNamesJson(encodeTagNames(normalizeTagNames(tagNames)));
+            version.setSummary(trimSummary(summary));
+            version.setCreatedAt(LocalDateTime.now());
+            try {
+                noteVersionMapper.insert(version);
+                trimOldVersions(userId, noteId);
+                return nextVersionNo;
+            } catch (DuplicateKeyException ex) {
+                if (i == maxRetry - 1) {
+                    throw new BizException(409, "Note version conflict, please retry");
+                }
+            }
+        }
+        throw new BizException(409, "Note version conflict, please retry");
     }
 
     private int nextVersionNo(Long userId, Long noteId) {
@@ -914,7 +952,11 @@ public class NoteServiceImpl implements NoteService {
             link.setUserId(userId);
             link.setNoteId(noteId);
             link.setQuestionId(questionId);
-            noteQuestionLinkMapper.insert(link);
+            try {
+                noteQuestionLinkMapper.insert(link);
+            } catch (DuplicateKeyException ignore) {
+                // Ignore concurrent duplicate relation insert.
+            }
         }
     }
 
@@ -937,7 +979,11 @@ public class NoteServiceImpl implements NoteService {
             link.setUserId(userId);
             link.setNoteId(noteId);
             link.setMaterialId(materialId);
-            noteMaterialLinkMapper.insert(link);
+            try {
+                noteMaterialLinkMapper.insert(link);
+            } catch (DuplicateKeyException ignore) {
+                // Ignore concurrent duplicate relation insert.
+            }
         }
     }
 

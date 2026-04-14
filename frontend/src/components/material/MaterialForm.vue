@@ -38,7 +38,7 @@
       </el-select>
     </el-form-item>
 
-    <el-form-item label="内容/链接" prop="content">
+    <el-form-item label="内容/链接" prop="content" required>
       <el-input v-model="form.content" type="textarea" :rows="5" placeholder="可填写文字、代码或链接" />
       <div class="upload-wrap">
         <el-upload

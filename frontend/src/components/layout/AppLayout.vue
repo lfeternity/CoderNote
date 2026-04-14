@@ -104,6 +104,7 @@ import { toZhMajorLabel } from '../../utils/major'
 
 const SIDEBAR_STORAGE_KEY = 'eb_sidebar_collapsed'
 const SIDEBAR_TOGGLE_EVENT = 'eb:sidebar-toggle-request'
+const LAYOUT_SCROLL_LOCK_CLASS = 'app-layout-scroll-locked'
 
 const router = useRouter()
 const route = useRoute()
@@ -113,6 +114,7 @@ const keyword = ref(route.query.keyword || '')
 const sidebarMenuItems = SIDEBAR_MENU_ITEMS
 const sidebarCollapsed = ref(false)
 const hasSidebarPreference = ref(false)
+let layoutDisposed = false
 
 const isSidebarCollapsed = computed(() => sidebarCollapsed.value)
 
@@ -214,8 +216,21 @@ function onExternalSidebarToggle() {
   toggleSidebar()
 }
 
+function setLayoutScrollLocked(locked) {
+  if (typeof document === 'undefined') {
+    return
+  }
+  document.documentElement.classList.toggle(LAYOUT_SCROLL_LOCK_CLASS, locked)
+  document.body.classList.toggle(LAYOUT_SCROLL_LOCK_CLASS, locked)
+}
+
 onMounted(async () => {
+  layoutDisposed = false
+  setLayoutScrollLocked(true)
   await authStore.bootstrap()
+  if (layoutDisposed) {
+    return
+  }
   restoreSidebarPreference()
   applyResponsiveDefault()
   window.addEventListener('keydown', onGlobalKeydown)
@@ -224,6 +239,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  layoutDisposed = true
+  setLayoutScrollLocked(false)
   window.removeEventListener('keydown', onGlobalKeydown)
   window.removeEventListener('resize', onWindowResize)
   window.removeEventListener(SIDEBAR_TOGGLE_EVENT, onExternalSidebarToggle)
@@ -231,6 +248,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+:global(html.app-layout-scroll-locked),
+:global(body.app-layout-scroll-locked) {
+  overflow-y: hidden;
+}
+
 .layout-shell {
   display: grid;
   grid-template-columns: 264px minmax(0, 1fr);

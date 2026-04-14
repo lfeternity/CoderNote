@@ -10,6 +10,7 @@ import com.codernote.platform.mapper.NoteTagMapper;
 import com.codernote.platform.mapper.QuestionTagMapper;
 import com.codernote.platform.mapper.TagMapper;
 import com.codernote.platform.service.TagRelationHelperService;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -54,9 +55,7 @@ public class TagRelationHelperServiceImpl implements TagRelationHelperService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         List<Long> result = new ArrayList<>();
         for (String tagName : normalized) {
-            Tag exists = tagMapper.selectOne(new LambdaQueryWrapper<Tag>()
-                    .eq(Tag::getName, tagName)
-                    .last("limit 1"));
+            Tag exists = findOwnedTagByName(userId, tagName);
             if (exists != null) {
                 result.add(exists.getId());
                 continue;
@@ -66,8 +65,16 @@ public class TagRelationHelperServiceImpl implements TagRelationHelperService {
             tag.setCreatorUserId(userId);
             tag.setCreatedAt(LocalDateTime.now());
             tag.setUpdatedAt(LocalDateTime.now());
-            tagMapper.insert(tag);
-            result.add(tag.getId());
+            try {
+                tagMapper.insert(tag);
+                result.add(tag.getId());
+            } catch (DuplicateKeyException ex) {
+                Tag concurrent = findOwnedTagByName(userId, tagName);
+                if (concurrent == null) {
+                    throw ex;
+                }
+                result.add(concurrent.getId());
+            }
         }
         return result;
     }
@@ -281,5 +288,15 @@ public class TagRelationHelperServiceImpl implements TagRelationHelperService {
     @Override
     public boolean isUsed(Long tagId) {
         return usageCount(tagId) > 0;
+    }
+
+    private Tag findOwnedTagByName(Long userId, String tagName) {
+        if (userId == null || !StringUtils.hasText(tagName)) {
+            return null;
+        }
+        return tagMapper.selectOne(new LambdaQueryWrapper<Tag>()
+                .eq(Tag::getName, tagName)
+                .eq(Tag::getCreatorUserId, userId)
+                .last("limit 1"));
     }
 }

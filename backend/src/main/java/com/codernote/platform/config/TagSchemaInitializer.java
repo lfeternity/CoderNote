@@ -33,5 +33,23 @@ public class TagSchemaInitializer {
         if (columnExists == null || columnExists <= 0) {
             jdbcTemplate.execute("ALTER TABLE `tag` ADD COLUMN `cover_path` VARCHAR(500) DEFAULT NULL AFTER `name`");
         }
+
+        Integer oldUniqueExists = jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM information_schema.STATISTICS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tag' AND INDEX_NAME = 'uk_tag_name'",
+                Integer.class
+        );
+        if (oldUniqueExists != null && oldUniqueExists > 0) {
+            jdbcTemplate.execute("ALTER TABLE `tag` DROP INDEX `uk_tag_name`");
+        }
+
+        Integer newUniqueExists = jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM information_schema.STATISTICS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tag' AND INDEX_NAME = 'uk_tag_creator_name'",
+                Integer.class
+        );
+        if (newUniqueExists == null || newUniqueExists <= 0) {
+            jdbcTemplate.execute("ALTER TABLE `tag` ADD UNIQUE KEY `uk_tag_creator_name` (`creator_user_id`, `name`)");
+        }
     }
 }

@@ -22,11 +22,13 @@ import com.codernote.platform.mapper.NoteMaterialLinkMapper;
 import com.codernote.platform.mapper.StudyMaterialMapper;
 import com.codernote.platform.mapper.StudyNoteMapper;
 import com.codernote.platform.mapper.TagMapper;
+import com.codernote.platform.service.CacheVersionService;
 import com.codernote.platform.service.ManualLinkService;
 import com.codernote.platform.service.MaterialService;
 import com.codernote.platform.service.TagRelationHelperService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -57,6 +59,7 @@ public class MaterialServiceImpl implements MaterialService {
     private final TagMapper tagMapper;
     private final TagRelationHelperService tagRelationHelperService;
     private final ManualLinkService manualLinkService;
+    private final CacheVersionService cacheVersionService;
     private final ObjectMapper objectMapper;
 
     public MaterialServiceImpl(StudyMaterialMapper materialMapper,
@@ -67,6 +70,7 @@ public class MaterialServiceImpl implements MaterialService {
                                TagMapper tagMapper,
                                TagRelationHelperService tagRelationHelperService,
                                ManualLinkService manualLinkService,
+                               CacheVersionService cacheVersionService,
                                ObjectMapper objectMapper) {
         this.materialMapper = materialMapper;
         this.materialFavoriteMapper = materialFavoriteMapper;
@@ -76,6 +80,7 @@ public class MaterialServiceImpl implements MaterialService {
         this.tagMapper = tagMapper;
         this.tagRelationHelperService = tagRelationHelperService;
         this.manualLinkService = manualLinkService;
+        this.cacheVersionService = cacheVersionService;
         this.objectMapper = objectMapper;
     }
 
@@ -101,6 +106,7 @@ public class MaterialServiceImpl implements MaterialService {
 
         validateManualQuestionIds(userId, request.getManualQuestionIds());
         manualLinkService.replaceMaterialLinks(userId, material.getId(), request.getManualQuestionIds());
+        cacheVersionService.bumpSearchAndStatisticsForUser(userId);
         return material.getId();
     }
 
@@ -124,6 +130,7 @@ public class MaterialServiceImpl implements MaterialService {
 
         validateManualQuestionIds(userId, request.getManualQuestionIds());
         manualLinkService.replaceMaterialLinks(userId, materialId, request.getManualQuestionIds());
+        cacheVersionService.bumpSearchAndStatisticsForUser(userId);
     }
 
     @Override
@@ -135,6 +142,7 @@ public class MaterialServiceImpl implements MaterialService {
         manualLinkService.clearByMaterialId(userId, materialId);
         materialFavoriteMapper.delete(new LambdaQueryWrapper<MaterialFavorite>()
                 .eq(MaterialFavorite::getMaterialId, materialId));
+        cacheVersionService.bumpSearchAndStatisticsForUser(userId);
     }
 
     @Override
@@ -309,7 +317,12 @@ public class MaterialServiceImpl implements MaterialService {
         favorite.setUserId(userId);
         favorite.setMaterialId(material.getId());
         favorite.setCreatedAt(LocalDateTime.now());
-        materialFavoriteMapper.insert(favorite);
+        try {
+            materialFavoriteMapper.insert(favorite);
+        } catch (DuplicateKeyException ignore) {
+            // Concurrent favorite requests can race; treat as idempotent success.
+        }
+        cacheVersionService.bumpSearchForUser(userId);
     }
 
     @Override
@@ -319,6 +332,7 @@ public class MaterialServiceImpl implements MaterialService {
         materialFavoriteMapper.delete(new LambdaQueryWrapper<MaterialFavorite>()
                 .eq(MaterialFavorite::getUserId, userId)
                 .eq(MaterialFavorite::getMaterialId, materialId));
+        cacheVersionService.bumpSearchForUser(userId);
     }
 
     @Override
@@ -371,6 +385,7 @@ public class MaterialServiceImpl implements MaterialService {
         if (StringUtils.hasText(tag)) {
             Tag exactTag = tagMapper.selectOne(new LambdaQueryWrapper<Tag>()
                     .eq(Tag::getName, tag.trim())
+                    .eq(Tag::getCreatorUserId, userId)
                     .last("limit 1"));
             if (exactTag == null) {
                 return PageResult.empty(pageNum, size);
@@ -388,6 +403,7 @@ public class MaterialServiceImpl implements MaterialService {
         if (StringUtils.hasText(keyword)) {
             String key = keyword.trim();
             List<Tag> keywordTags = tagMapper.selectList(new LambdaQueryWrapper<Tag>()
+                    .eq(Tag::getCreatorUserId, userId)
                     .like(Tag::getName, key));
             Set<Long> keywordTagMaterialIds = keywordTags.isEmpty()
                     ? Collections.emptySet()

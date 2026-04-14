@@ -77,18 +77,22 @@ public class FileController {
         if (!StringUtils.hasText(ext) || !ALLOWED_EXTENSIONS.contains(ext.toLowerCase(Locale.ROOT))) {
             throw new BizException(400, "Unsupported file type");
         }
+        String normalizedExt = ext.toLowerCase(Locale.ROOT);
+
+        byte[] fileBytes = file.getBytes();
+        validateMagic(normalizedExt, fileBytes);
 
         String folder = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
         Path userDir = uploadBaseDir.resolve(normalizedBizType).resolve(String.valueOf(userId)).resolve(folder).normalize();
         Files.createDirectories(userDir);
 
-        String storedName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
+        String storedName = UUID.randomUUID().toString().replace("-", "") + "." + normalizedExt;
         Path target = userDir.resolve(storedName).normalize();
         if (!target.startsWith(uploadBaseDir)) {
             throw new BizException(400, "Invalid target path");
         }
 
-        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(new java.io.ByteArrayInputStream(fileBytes), target, StandardCopyOption.REPLACE_EXISTING);
 
         String relativePath = normalizedBizType + "/" + userId + "/" + folder + "/" + storedName;
 
@@ -137,6 +141,7 @@ public class FileController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .header("X-Content-Type-Options", "nosniff")
                 .body(resource);
     }
 
@@ -193,5 +198,94 @@ public class FileController {
             return true;
         }
         return StringUtils.hasText(ext) && IMAGE_EXTENSIONS.contains(ext.toLowerCase(Locale.ROOT));
+    }
+
+    private void validateMagic(String ext, byte[] bytes) {
+        if (!StringUtils.hasText(ext) || bytes == null || bytes.length == 0) {
+            throw new BizException(400, "Invalid file content");
+        }
+        String normalizedExt = ext.toLowerCase(Locale.ROOT);
+        boolean mismatch = ("png".equals(normalizedExt) && !hasPrefix(bytes, 0x89, 0x50, 0x4E, 0x47))
+                || (("jpg".equals(normalizedExt) || "jpeg".equals(normalizedExt)) && !hasPrefix(bytes, 0xFF, 0xD8, 0xFF))
+                || ("gif".equals(normalizedExt) && !hasPrefixAscii(bytes, "GIF8"))
+                || ("webp".equals(normalizedExt) && !(hasPrefixAscii(bytes, "RIFF") && hasAsciiAt(bytes, 8, "WEBP")))
+                || ("bmp".equals(normalizedExt) && !hasPrefix(bytes, 0x42, 0x4D))
+                || ("pdf".equals(normalizedExt) && !containsAsciiWithin(bytes, "%PDF-", 1024))
+                || ("rtf".equals(normalizedExt) && !containsAsciiWithin(bytes, "{\\rtf", 256))
+                || (("doc".equals(normalizedExt) || "xls".equals(normalizedExt) || "ppt".equals(normalizedExt))
+                && !(hasPrefix(bytes, 0xD0, 0xCF, 0x11, 0xE0) || hasPrefix(bytes, 0x50, 0x4B)))
+                || (("docx".equals(normalizedExt) || "xlsx".equals(normalizedExt) || "pptx".equals(normalizedExt))
+                && !hasPrefix(bytes, 0x50, 0x4B));
+        if (mismatch) {
+            throw new BizException(400, "File content does not match extension");
+        }
+    }
+
+    private boolean hasPrefix(byte[] bytes, int... magic) {
+        if (bytes.length < magic.length) {
+            return false;
+        }
+        for (int i = 0; i < magic.length; i++) {
+            if ((bytes[i] & 0xFF) != magic[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean hasPrefixAscii(byte[] bytes, String text) {
+        if (!StringUtils.hasText(text)) {
+            return false;
+        }
+        byte[] expected = text.getBytes(StandardCharsets.US_ASCII);
+        if (bytes.length < expected.length) {
+            return false;
+        }
+        for (int i = 0; i < expected.length; i++) {
+            if (bytes[i] != expected[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean hasAsciiAt(byte[] bytes, int offset, String text) {
+        if (!StringUtils.hasText(text) || offset < 0) {
+            return false;
+        }
+        byte[] expected = text.getBytes(StandardCharsets.US_ASCII);
+        if (bytes.length < offset + expected.length) {
+            return false;
+        }
+        for (int i = 0; i < expected.length; i++) {
+            if (bytes[offset + i] != expected[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean containsAsciiWithin(byte[] bytes, String text, int maxScanLength) {
+        if (!StringUtils.hasText(text) || bytes == null || bytes.length == 0 || maxScanLength <= 0) {
+            return false;
+        }
+        byte[] expected = text.getBytes(StandardCharsets.US_ASCII);
+        int scanLimit = Math.min(bytes.length, maxScanLength);
+        if (scanLimit < expected.length) {
+            return false;
+        }
+        for (int i = 0; i <= scanLimit - expected.length; i++) {
+            boolean matched = true;
+            for (int j = 0; j < expected.length; j++) {
+                if (bytes[i + j] != expected[j]) {
+                    matched = false;
+                    break;
+                }
+            }
+            if (matched) {
+                return true;
+            }
+        }
+        return false;
     }
 }

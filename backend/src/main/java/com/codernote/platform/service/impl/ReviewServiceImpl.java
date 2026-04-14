@@ -33,6 +33,7 @@ import com.codernote.platform.mapper.ReviewLogMapper;
 import com.codernote.platform.mapper.ReviewPlanMapper;
 import com.codernote.platform.mapper.StudyNoteMapper;
 import com.codernote.platform.mapper.TagMapper;
+import com.codernote.platform.service.CacheVersionService;
 import com.codernote.platform.service.ReviewService;
 import com.codernote.platform.service.TagRelationHelperService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -77,6 +78,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final NoteTagMapper noteTagMapper;
     private final TagMapper tagMapper;
     private final TagRelationHelperService tagRelationHelperService;
+    private final CacheVersionService cacheVersionService;
     private final ObjectMapper objectMapper;
 
     public ReviewServiceImpl(ReviewPlanMapper reviewPlanMapper,
@@ -88,6 +90,7 @@ public class ReviewServiceImpl implements ReviewService {
                              NoteTagMapper noteTagMapper,
                              TagMapper tagMapper,
                              TagRelationHelperService tagRelationHelperService,
+                             CacheVersionService cacheVersionService,
                              ObjectMapper objectMapper) {
         this.reviewPlanMapper = reviewPlanMapper;
         this.reviewLogMapper = reviewLogMapper;
@@ -98,6 +101,7 @@ public class ReviewServiceImpl implements ReviewService {
         this.noteTagMapper = noteTagMapper;
         this.tagMapper = tagMapper;
         this.tagRelationHelperService = tagRelationHelperService;
+        this.cacheVersionService = cacheVersionService;
         this.objectMapper = objectMapper;
     }
 
@@ -432,6 +436,7 @@ public class ReviewServiceImpl implements ReviewService {
 
         syncQuestionMastery(userId, contentType, request.getContentId(), masteryStatus);
         refreshTodayStatForUser(userId);
+        cacheVersionService.bumpStatisticsForUser(userId);
     }
 
     @Override
@@ -483,6 +488,7 @@ public class ReviewServiceImpl implements ReviewService {
 
         increaseTodayCompletedCount(userId);
         refreshTodayStatForUser(userId);
+        cacheVersionService.bumpStatisticsForUser(userId);
     }
 
     @Override
@@ -508,6 +514,7 @@ public class ReviewServiceImpl implements ReviewService {
         reviewPlanMapper.delete(new LambdaQueryWrapper<ReviewPlan>()
                 .eq(ReviewPlan::getUserId, userId));
         refreshTodayStatForUser(userId);
+        cacheVersionService.bumpStatisticsForUser(userId);
     }
 
     @Override
@@ -521,6 +528,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .eq(ReviewPlan::getContentType, contentType.name())
                 .eq(ReviewPlan::getContentId, contentId));
         refreshTodayStatForUser(userId);
+        cacheVersionService.bumpStatisticsForUser(userId);
     }
 
     @Override
@@ -643,6 +651,7 @@ public class ReviewServiceImpl implements ReviewService {
 
         syncQuestionMastery(userId, contentType, contentId, MasteryStatus.REVIEWING.name());
         refreshTodayStatForUser(userId);
+        cacheVersionService.bumpStatisticsForUser(userId);
     }
 
     private String normalizePlanMode(String planMode) {

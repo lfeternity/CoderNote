@@ -10,6 +10,26 @@ const request = axios.create({
   withCredentials: true
 })
 
+function getCookie(name) {
+  if (!name || typeof document === 'undefined') return ''
+  const encodedName = encodeURIComponent(name)
+  const parts = document.cookie ? document.cookie.split('; ') : []
+  for (const part of parts) {
+    const index = part.indexOf('=')
+    if (index <= 0) continue
+    const key = part.slice(0, index)
+    if (key === encodedName || key === name) {
+      return decodeURIComponent(part.slice(index + 1))
+    }
+  }
+  return ''
+}
+
+function isMutatingMethod(method) {
+  const normalized = String(method || 'GET').trim().toUpperCase()
+  return normalized !== 'GET' && normalized !== 'HEAD' && normalized !== 'OPTIONS'
+}
+
 function isPlainObject(value) {
   return Object.prototype.toString.call(value) === '[object Object]'
 }
@@ -36,6 +56,14 @@ function transformKeysDeep(value, keyTransformer) {
 }
 
 request.interceptors.request.use((config) => {
+  if (isMutatingMethod(config.method)) {
+    const csrfToken = getCookie('XSRF-TOKEN')
+    if (csrfToken) {
+      config.headers = config.headers || {}
+      config.headers['X-CSRF-Token'] = csrfToken
+    }
+  }
+
   const hasTransformableBody =
     config.data &&
     !(config.data instanceof FormData) &&

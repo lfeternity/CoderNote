@@ -8,6 +8,7 @@ import com.codernote.platform.dto.user.RegisterRequest;
 import com.codernote.platform.dto.user.UpdateProfileRequest;
 import com.codernote.platform.dto.user.UserProfileVO;
 import com.codernote.platform.security.AuthContext;
+import com.codernote.platform.security.CsrfTokenService;
 import com.codernote.platform.service.AvatarService;
 import com.codernote.platform.service.UserService;
 import org.springframework.http.MediaType;
@@ -24,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import javax.servlet.http.HttpServletResponse;
 
 @Validated
 @RestController
@@ -32,10 +34,14 @@ public class UserController {
 
     private final UserService userService;
     private final AvatarService avatarService;
+    private final CsrfTokenService csrfTokenService;
 
-    public UserController(UserService userService, AvatarService avatarService) {
+    public UserController(UserService userService,
+                          AvatarService avatarService,
+                          CsrfTokenService csrfTokenService) {
         this.userService = userService;
         this.avatarService = avatarService;
+        this.csrfTokenService = csrfTokenService;
     }
 
     @GetMapping("/captcha")
@@ -51,8 +57,11 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<Void> login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest) {
+    public ApiResponse<Void> login(@Valid @RequestBody LoginRequest request,
+                                   HttpServletRequest servletRequest,
+                                   HttpServletResponse servletResponse) {
         userService.login(request, servletRequest);
+        csrfTokenService.ensureTokenAndWrite(servletRequest.getSession(false), servletResponse);
         return ApiResponse.success("Login success", null);
     }
 

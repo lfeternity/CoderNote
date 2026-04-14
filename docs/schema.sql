@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `tag` (
   `created_at` DATETIME NOT NULL,
   `updated_at` DATETIME NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_tag_name` (`name`),
+  UNIQUE KEY `uk_tag_creator_name` (`creator_user_id`, `name`),
   KEY `idx_tag_creator_user_id` (`creator_user_id`),
   CONSTRAINT `fk_tag_creator_user` FOREIGN KEY (`creator_user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

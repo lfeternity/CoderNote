@@ -5,6 +5,9 @@ import com.codernote.platform.service.AvatarService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,35 +34,52 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class AvatarServiceImpl implements AvatarService {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
-    private static final int UPLOAD_RECORD_CLEANUP_THRESHOLD = 4096;
+    private static final ZoneId SHANGHAI_ZONE = ZoneId.of("Asia/Shanghai");
+    private static final DateTimeFormatter DAY_KEY_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
+    private static final String AVATAR_UPLOAD_KEY_PREFIX = "avatar:upload:daily:";
+    private static final RedisScript<Long> AVATAR_UPLOAD_CONSUME_SCRIPT = new DefaultRedisScript<>(
+            "local current = redis.call('GET', KEYS[1]);"
+                    + "local currentNum = tonumber(current);"
+                    + "if current and not currentNum then redis.call('DEL', KEYS[1]); currentNum = nil end;"
+                    + "if currentNum and currentNum >= tonumber(ARGV[1]) then "
+                    + "if redis.call('PTTL', KEYS[1]) < 0 then redis.call('PEXPIRE', KEYS[1], ARGV[2]) end; "
+                    + "return -1 end;"
+                    + "local next = redis.call('INCR', KEYS[1]);"
+                    + "if redis.call('PTTL', KEYS[1]) < 0 then redis.call('PEXPIRE', KEYS[1], ARGV[2]) end;"
+                    + "return next;",
+            Long.class
+    );
 
     private final Path avatarBaseDir;
     private final long maxFileSize;
     private final int dailyLimit;
     private final int outputSize;
-
-    private final Map<Long, DailyUploadRecord> uploadRecordMap = new ConcurrentHashMap<>();
+    private final StringRedisTemplate stringRedisTemplate;
 
     public AvatarServiceImpl(@Value("${app.avatar.base-dir:uploads/avatar}") String avatarBaseDir,
                              @Value("${app.avatar.max-size-bytes:2097152}") long maxFileSize,
                              @Value("${app.avatar.daily-limit:10}") int dailyLimit,
-                             @Value("${app.avatar.output-size:512}") int outputSize) {
+                             @Value("${app.avatar.output-size:512}") int outputSize,
+                             StringRedisTemplate stringRedisTemplate) {
         this.avatarBaseDir = Paths.get(avatarBaseDir).toAbsolutePath().normalize();
         this.maxFileSize = Math.max(1L, maxFileSize);
         this.dailyLimit = Math.max(1, dailyLimit);
         this.outputSize = Math.max(64, outputSize);
+        this.stringRedisTemplate = stringRedisTemplate;
     }
 
     @Override
@@ -245,21 +265,22 @@ public class AvatarServiceImpl implements AvatarService {
     }
 
     private void checkDailyUploadLimit(Long userId) {
-        LocalDate today = LocalDate.now();
-        uploadRecordMap.compute(userId, (key, oldRecord) -> {
-            DailyUploadRecord base = oldRecord;
-            if (base == null || !base.date.equals(today)) {
-                base = new DailyUploadRecord(today, 0);
-            }
+        ZonedDateTime now = ZonedDateTime.now(SHANGHAI_ZONE);
+        ZonedDateTime nextDayStart = now.plusDays(1).truncatedTo(ChronoUnit.DAYS);
+        long ttlMillis = Math.max(1000L, ChronoUnit.MILLIS.between(now, nextDayStart));
+        String key = AVATAR_UPLOAD_KEY_PREFIX + now.format(DAY_KEY_FORMATTER) + ":" + userId;
 
-            if (base.count >= dailyLimit) {
-                throw new BizException(429, "Avatar upload limit reached today");
-            }
-            return new DailyUploadRecord(today, base.count + 1);
-        });
-
-        if (uploadRecordMap.size() > UPLOAD_RECORD_CLEANUP_THRESHOLD) {
-            uploadRecordMap.entrySet().removeIf(entry -> !today.equals(entry.getValue().date));
+        Long usedCount = stringRedisTemplate.execute(
+                AVATAR_UPLOAD_CONSUME_SCRIPT,
+                Collections.singletonList(key),
+                String.valueOf(dailyLimit),
+                String.valueOf(ttlMillis)
+        );
+        if (usedCount == null) {
+            throw new BizException(500, "Avatar upload service unavailable, please retry later");
+        }
+        if (usedCount < 0) {
+            throw new BizException(429, "Avatar upload limit reached today");
         }
     }
 
@@ -344,15 +365,5 @@ public class AvatarServiceImpl implements AvatarService {
         PNG,
         WEBP,
         UNKNOWN
-    }
-
-    private static final class DailyUploadRecord {
-        private final LocalDate date;
-        private final int count;
-
-        private DailyUploadRecord(LocalDate date, int count) {
-            this.date = date;
-            this.count = count;
-        }
     }
 }

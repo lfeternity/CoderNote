@@ -22,6 +22,7 @@ import com.codernote.platform.mapper.NoteQuestionLinkMapper;
 import com.codernote.platform.mapper.StudyMaterialMapper;
 import com.codernote.platform.mapper.StudyNoteMapper;
 import com.codernote.platform.mapper.TagMapper;
+import com.codernote.platform.service.CacheVersionService;
 import com.codernote.platform.service.ManualLinkService;
 import com.codernote.platform.service.QuestionService;
 import com.codernote.platform.service.ReviewService;
@@ -57,6 +58,7 @@ public class QuestionServiceImpl implements QuestionService {
     private final TagRelationHelperService tagRelationHelperService;
     private final ManualLinkService manualLinkService;
     private final ReviewService reviewService;
+    private final CacheVersionService cacheVersionService;
     private final ObjectMapper objectMapper;
 
     public QuestionServiceImpl(ErrorQuestionMapper questionMapper,
@@ -67,6 +69,7 @@ public class QuestionServiceImpl implements QuestionService {
                                TagRelationHelperService tagRelationHelperService,
                                ManualLinkService manualLinkService,
                                ReviewService reviewService,
+                               CacheVersionService cacheVersionService,
                                ObjectMapper objectMapper) {
         this.questionMapper = questionMapper;
         this.materialMapper = materialMapper;
@@ -76,6 +79,7 @@ public class QuestionServiceImpl implements QuestionService {
         this.tagRelationHelperService = tagRelationHelperService;
         this.manualLinkService = manualLinkService;
         this.reviewService = reviewService;
+        this.cacheVersionService = cacheVersionService;
         this.objectMapper = objectMapper;
     }
 
@@ -104,6 +108,7 @@ public class QuestionServiceImpl implements QuestionService {
 
         validateManualMaterialIds(userId, request.getManualMaterialIds());
         manualLinkService.replaceQuestionLinks(userId, question.getId(), request.getManualMaterialIds());
+        cacheVersionService.bumpSearchAndStatisticsForUser(userId);
         return question.getId();
     }
 
@@ -129,6 +134,7 @@ public class QuestionServiceImpl implements QuestionService {
 
         validateManualMaterialIds(userId, request.getManualMaterialIds());
         manualLinkService.replaceQuestionLinks(userId, questionId, request.getManualMaterialIds());
+        cacheVersionService.bumpSearchAndStatisticsForUser(userId);
     }
 
     @Override
@@ -139,6 +145,7 @@ public class QuestionServiceImpl implements QuestionService {
         tagRelationHelperService.replaceQuestionTags(questionId, Collections.emptyList());
         manualLinkService.clearByQuestionId(userId, questionId);
         reviewService.removePlanByContent(userId, ReviewContentType.QUESTION, questionId);
+        cacheVersionService.bumpSearchAndStatisticsForUser(userId);
     }
 
     @Override
@@ -178,6 +185,7 @@ public class QuestionServiceImpl implements QuestionService {
         if (StringUtils.hasText(tag)) {
             Tag exactTag = tagMapper.selectOne(new LambdaQueryWrapper<Tag>()
                     .eq(Tag::getName, tag.trim())
+                    .eq(Tag::getCreatorUserId, userId)
                     .last("limit 1"));
             if (exactTag == null) {
                 return PageResult.empty(pageNum, size);
@@ -191,6 +199,7 @@ public class QuestionServiceImpl implements QuestionService {
         if (StringUtils.hasText(keyword)) {
             String key = keyword.trim();
             List<Tag> keywordTags = tagMapper.selectList(new LambdaQueryWrapper<Tag>()
+                    .eq(Tag::getCreatorUserId, userId)
                     .like(Tag::getName, key));
             Set<Long> keywordTagQuestionIds = keywordTags.isEmpty()
                     ? Collections.emptySet()
@@ -352,6 +361,7 @@ public class QuestionServiceImpl implements QuestionService {
         request.setContentId(question.getId());
         request.setMasteryStatus(masteryStatus);
         reviewService.updateContentStatus(userId, request);
+        cacheVersionService.bumpSearchAndStatisticsForUser(userId);
     }
 
     @Override

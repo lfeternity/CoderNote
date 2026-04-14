@@ -24,6 +24,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.io.Serializable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -573,7 +574,23 @@ public class OauthServiceImpl implements OauthService {
     }
 
     private void setLoginSession(HttpServletRequest request, Long userId, String nickname) {
-        HttpSession session = request.getSession(true);
+        HttpSession current = request.getSession(false);
+        HttpSession session;
+        if (current == null) {
+            session = request.getSession(true);
+        } else {
+            try {
+                request.changeSessionId();
+                session = request.getSession(false);
+                if (session == null) {
+                    current.invalidate();
+                    session = request.getSession(true);
+                }
+            } catch (IllegalStateException ex) {
+                current.invalidate();
+                session = request.getSession(true);
+            }
+        }
         session.setAttribute(Constants.SESSION_USER_ID, userId);
         session.setAttribute(Constants.SESSION_USER_NICKNAME, nickname);
     }
@@ -801,7 +818,9 @@ public class OauthServiceImpl implements OauthService {
         BIND
     }
 
-    private static final class OauthStateContext {
+    private static final class OauthStateContext implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private OauthScene scene;
         private String platform;
         private Long userId;
@@ -818,7 +837,9 @@ public class OauthServiceImpl implements OauthService {
         private String avatarUrl;
     }
 
-    private static final class PendingBindContext {
+    private static final class PendingBindContext implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private String platform;
         private String openId;
         private String unionId;

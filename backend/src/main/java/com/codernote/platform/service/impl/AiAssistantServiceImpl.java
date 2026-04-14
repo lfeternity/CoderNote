@@ -21,6 +21,9 @@ import com.codernote.platform.service.AiAssistantService;
 import com.codernote.platform.service.MaterialService;
 import com.codernote.platform.service.NoteService;
 import com.codernote.platform.service.QuestionService;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -31,18 +34,20 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -52,6 +57,20 @@ public class AiAssistantServiceImpl implements AiAssistantService {
 
     private static final int FREE_DAILY_LIMIT = 10;
     private static final ZoneId SHANGHAI_ZONE = ZoneId.of("Asia/Shanghai");
+    private static final DateTimeFormatter DAY_KEY_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
+    private static final String AI_QUOTA_KEY_PREFIX = "ai:quota:daily:";
+    private static final RedisScript<Long> AI_QUOTA_CONSUME_SCRIPT = new DefaultRedisScript<>(
+            "local current = redis.call('GET', KEYS[1]);"
+                    + "local currentNum = tonumber(current);"
+                    + "if current and not currentNum then redis.call('DEL', KEYS[1]); currentNum = nil end;"
+                    + "if currentNum and currentNum >= tonumber(ARGV[1]) then "
+                    + "if redis.call('PTTL', KEYS[1]) < 0 then redis.call('PEXPIRE', KEYS[1], ARGV[2]) end; "
+                    + "return -1 end;"
+                    + "local next = redis.call('INCR', KEYS[1]);"
+                    + "if redis.call('PTTL', KEYS[1]) < 0 then redis.call('PEXPIRE', KEYS[1], ARGV[2]) end;"
+                    + "return next;",
+            Long.class
+    );
 
     private static final String DEFAULT_MODEL = "SAFE_GPT_SIM";
     private static final String MODEL_QWEN = "QWEN";
@@ -90,20 +109,21 @@ public class AiAssistantServiceImpl implements AiAssistantService {
     private final MaterialService materialService;
     private final AiProviderProperties aiProviderProperties;
     private final ObjectMapper objectMapper;
+    private final StringRedisTemplate stringRedisTemplate;
     private final HttpClient httpClient;
-
-    private final Map<Long, DailyUsageRecord> usageByUser = new ConcurrentHashMap<>();
 
     public AiAssistantServiceImpl(QuestionService questionService,
                                   NoteService noteService,
                                   MaterialService materialService,
                                   AiProviderProperties aiProviderProperties,
-                                  ObjectMapper objectMapper) {
+                                  ObjectMapper objectMapper,
+                                  StringRedisTemplate stringRedisTemplate) {
         this.questionService = questionService;
         this.noteService = noteService;
         this.materialService = materialService;
         this.aiProviderProperties = aiProviderProperties;
         this.objectMapper = objectMapper;
+        this.stringRedisTemplate = stringRedisTemplate;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
@@ -1328,6 +1348,9 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         if (requestModelConfig == null) {
             return null;
         }
+        if (!Boolean.TRUE.equals(aiProviderProperties.getAllowRuntimeModelConfig())) {
+            throw new BizException(403, "Runtime model config is disabled by server policy");
+        }
         String providerModel = normalizeModel(firstNonBlank(
                 requestModelConfig.getProvider(),
                 fallbackModel
@@ -1341,7 +1364,49 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         config.baseUrl = trim(requestModelConfig.getBaseUrl());
         config.apiKey = trim(requestModelConfig.getApiKey());
         config.modelName = trim(requestModelConfig.getModelName());
+        if (!StringUtils.hasText(config.apiKey)) {
+            throw new BizException(400, "Runtime API key is required");
+        }
+        validateRuntimeEndpoint(config.baseUrl);
         return config;
+    }
+
+    private void validateRuntimeEndpoint(String baseUrl) {
+        if (!StringUtils.hasText(baseUrl)) {
+            return;
+        }
+        URI endpointUri;
+        try {
+            endpointUri = URI.create(baseUrl);
+        } catch (Exception ex) {
+            throw new BizException(400, "Runtime endpoint is invalid");
+        }
+        String scheme = trim(endpointUri.getScheme()).toLowerCase(Locale.ROOT);
+        if (!"http".equals(scheme) && !"https".equals(scheme)) {
+            throw new BizException(400, "Runtime endpoint must use http/https");
+        }
+        String host = trim(endpointUri.getHost()).toLowerCase(Locale.ROOT);
+        if (!StringUtils.hasText(host)) {
+            throw new BizException(400, "Runtime endpoint host is required");
+        }
+        Set<String> allowlist = runtimeAllowedHosts();
+        if (!allowlist.contains(host)) {
+            throw new BizException(400, "Runtime endpoint host is not in allowlist");
+        }
+    }
+
+    private Set<String> runtimeAllowedHosts() {
+        List<String> configured = aiProviderProperties.getRuntimeAllowedHosts();
+        if (CollectionUtils.isEmpty(configured)) {
+            return Collections.emptySet();
+        }
+        Set<String> allowlist = new HashSet<>();
+        for (String host : configured) {
+            if (StringUtils.hasText(host)) {
+                allowlist.add(host.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        return allowlist;
     }
 
     private AiProviderProperties.Provider provider(String model) {
@@ -1390,22 +1455,28 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         return option;
     }
 
-    private synchronized Usage consumeQuota(Long userId) {
-        LocalDate today = LocalDate.now(SHANGHAI_ZONE);
-        DailyUsageRecord record = usageByUser.get(userId);
-        if (record == null || !today.equals(record.date)) {
-            record = new DailyUsageRecord();
-            record.date = today;
-            record.usedCount = 0;
-            usageByUser.put(userId, record);
+    private Usage consumeQuota(Long userId) {
+        ZonedDateTime now = ZonedDateTime.now(SHANGHAI_ZONE);
+        ZonedDateTime nextDayStart = now.plusDays(1).truncatedTo(ChronoUnit.DAYS);
+        long ttlMillis = Math.max(1000L, ChronoUnit.MILLIS.between(now, nextDayStart));
+        String quotaKey = AI_QUOTA_KEY_PREFIX + now.format(DAY_KEY_FORMATTER) + ":" + userId;
+
+        Long usedCount = stringRedisTemplate.execute(
+                AI_QUOTA_CONSUME_SCRIPT,
+                Collections.singletonList(quotaKey),
+                String.valueOf(FREE_DAILY_LIMIT),
+                String.valueOf(ttlMillis)
+        );
+        if (usedCount == null) {
+            throw new BizException(500, "AI quota service unavailable, please retry later");
         }
-        if (record.usedCount >= FREE_DAILY_LIMIT) {
-            throw new BizException(429, "今日 AI 免费额度已用尽，请明天再试或联系客服升级");
+        if (usedCount < 0) {
+            throw new BizException(429, "Daily AI free quota is exhausted, please try again tomorrow");
         }
-        record.usedCount += 1;
+
         Usage usage = new Usage();
-        usage.used = record.usedCount;
-        usage.remaining = FREE_DAILY_LIMIT - record.usedCount;
+        usage.used = Math.toIntExact(usedCount);
+        usage.remaining = Math.max(0, FREE_DAILY_LIMIT - usage.used);
         return usage;
     }
 
@@ -1489,10 +1560,6 @@ public class AiAssistantServiceImpl implements AiAssistantService {
         private String mindMapFileName;
     }
 
-    private static class DailyUsageRecord {
-        private LocalDate date;
-        private int usedCount;
-    }
 
     private static class Usage {
         private int used;
