@@ -154,7 +154,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .eq(ReviewPlan::getMasteryStatus, MasteryStatus.MASTERED.name()));
 
         ReviewCenterOverviewVO vo = new ReviewCenterOverviewVO();
-        vo.setTodayDueTotal(todayStat == null ? 0L : Long.valueOf(nvl(todayStat.getDueTotal())));
+        vo.setTodayDueTotal(todayStat == null ? 0L : Long.valueOf(resolveDailyDueTotal(todayStat)));
         vo.setTodayCompletedCount(todayStat == null ? 0L : Long.valueOf(nvl(todayStat.getCompletedCount())));
         vo.setTotalReviewCount(totalReviewCount);
         vo.setMasteryRate(calculateRate(masteredPlanCount, totalPlanCount));
@@ -573,9 +573,12 @@ public class ReviewServiceImpl implements ReviewService {
                 .lt(ReviewPlan::getNextReviewAt, tomorrowStart)).intValue();
 
         ReviewDailyStat todayStat = getOrCreateTodayStat(userId, today, true);
+        int completedCount = nvl(todayStat.getCompletedCount());
         todayStat.setDueQuestionCount(questionDue);
         todayStat.setDueNoteCount(noteDue);
-        todayStat.setDueTotal(questionDue + noteDue);
+        // Keep today's denominator stable while reviews are completed during the day.
+        // `due_total` is treated as "today total workload", not "remaining due count".
+        todayStat.setDueTotal(questionDue + noteDue + completedCount);
         todayStat.setUpdatedAt(LocalDateTime.now());
         reviewDailyStatMapper.updateById(todayStat);
     }
@@ -1053,11 +1056,20 @@ public class ReviewServiceImpl implements ReviewService {
             ReviewDailyStat stat = statMap.get(date);
             ReviewCenterOverviewVO.TrendItem item = new ReviewCenterOverviewVO.TrendItem();
             item.setDate(TREND_DATE_FORMATTER.format(date));
-            item.setDueTotal(stat == null ? 0L : Long.valueOf(nvl(stat.getDueTotal())));
+            item.setDueTotal(stat == null ? 0L : Long.valueOf(resolveDailyDueTotal(stat)));
             item.setCompletedCount(stat == null ? 0L : Long.valueOf(nvl(stat.getCompletedCount())));
             list.add(item);
         }
         return list;
+    }
+
+    private int resolveDailyDueTotal(ReviewDailyStat stat) {
+        if (stat == null) {
+            return 0;
+        }
+        // Historical rows may contain remaining due count, while completed_count is cumulative.
+        // Guard against invalid "1/0" style combinations.
+        return Math.max(nvl(stat.getDueTotal()), nvl(stat.getCompletedCount()));
     }
 
     private Double calculateRate(long numerator, long denominator) {

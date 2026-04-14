@@ -52,7 +52,14 @@
             <el-input v-model="form.studentNo" />
           </el-form-item>
           <el-form-item label="专业" prop="major">
-            <el-select v-model="form.major" placeholder="请选择专业" style="width: 100%">
+            <el-select
+              v-model="form.major"
+              placeholder="请选择或输入专业"
+              style="width: 100%"
+              filterable
+              allow-create
+              default-first-option
+            >
               <el-option v-for="item in majorOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
@@ -139,7 +146,19 @@ const rules = {
     { required: true, message: '请输入昵称', trigger: 'blur' },
     { min: 1, max: 10, message: '昵称长度需在 1-10 个字符', trigger: 'blur' }
   ],
-  major: [{ required: true, message: '请选择专业', trigger: 'change' }],
+  major: [
+    { required: true, message: '请选择或输入专业', trigger: 'change' },
+    {
+      validator: (_, value, callback) => {
+        if (!String(value || '').trim()) {
+          callback(new Error('请选择或输入专业'))
+          return
+        }
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
     { pattern: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,16}$/, message: '密码需为 6-16 位字母+数字', trigger: 'blur' }
@@ -179,7 +198,11 @@ function onSubmit() {
     if (!valid) return
     loading.value = true
     try {
-      await register(form)
+      const payload = {
+        ...form,
+        major: String(form.major || '').trim()
+      }
+      await register(payload)
       ElMessage.success('注册成功，请登录')
       router.push('/login')
     } catch (_) {

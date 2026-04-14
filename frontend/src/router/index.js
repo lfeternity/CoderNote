@@ -21,6 +21,7 @@ import NoteListPage from '../pages/NoteListPage.vue'
 import NoteAddPage from '../pages/NoteAddPage.vue'
 import NoteAddFullscreenPage from '../pages/NoteAddFullscreenPage.vue'
 import NoteEditPage from '../pages/NoteEditPage.vue'
+import NoteEditFullscreenPage from '../pages/NoteEditFullscreenPage.vue'
 import NoteDetailPage from '../pages/NoteDetailPage.vue'
 import TagListPage from '../pages/TagListPage.vue'
 import TagRelationPage from '../pages/TagRelationPage.vue'
@@ -37,6 +38,7 @@ const routes = [
   { path: '/register', component: RegisterPage, meta: { guestOnly: true } },
   { path: '/oauth/bind', component: OauthBindPage, meta: { guestOnly: true } },
   { path: '/note/add/fullscreen', component: NoteAddFullscreenPage, meta: { requiresAuth: true } },
+  { path: '/note/update/:noteId/fullscreen', component: NoteEditFullscreenPage, meta: { requiresAuth: true } },
   {
     path: '/',
     component: AppLayout,

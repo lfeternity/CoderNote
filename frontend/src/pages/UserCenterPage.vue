@@ -22,8 +22,16 @@
             <el-input v-model="form.studentNo" :disabled="!isEditing" />
           </el-form-item>
           <el-form-item label="专业">
-            <el-select v-model="form.major" style="width: 100%" :disabled="!isEditing">
-              <el-option v-for="item in majorOptions" :key="item.value" :label="item.label" :value="item.value" />
+            <el-select
+              v-model="form.major"
+              style="width: 100%"
+              :disabled="!isEditing"
+              filterable
+              allow-create
+              default-first-option
+              placeholder="请选择或输入专业"
+            >
+              <el-option v-for="item in majorSelectOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
           <el-form-item label="备注">
@@ -129,6 +137,19 @@ const avatarDialogVisible = ref(false)
 const oauthBindings = ref([])
 const oauthLoading = ref(false)
 
+const majorSelectOptions = computed(() => {
+  const base = Array.isArray(majorOptions.value) ? majorOptions.value.slice() : []
+  const current = String(form.major || '').trim()
+  if (!current) {
+    return base
+  }
+  const exists = base.some((item) => String(item?.value || '').trim() === current)
+  if (exists) {
+    return base
+  }
+  return [{ label: toZhMajorLabel(current) || current, value: current }, ...base]
+})
+
 const displayMajor = computed(() => {
   return profile.major ? toZhMajorLabel(profile.major) : '-'
 })
@@ -171,7 +192,11 @@ function startEdit() {
 }
 
 async function saveProfile() {
-  await updateProfile(form)
+  const payload = {
+    ...form,
+    major: String(form.major || '').trim()
+  }
+  await updateProfile(payload)
   ElMessage.success('资料更新成功')
   await loadProfile()
   isEditing.value = false

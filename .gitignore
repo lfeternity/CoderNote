@@ -67,3 +67,11 @@ temp/
 .cache/
 *.tmp
 *.orig
+
+# Local-only docs/assets
+biaoqian.png
+DESIGN.md
+logo.png
+
+# Local Maven repository cache
+backend/.m2repo/

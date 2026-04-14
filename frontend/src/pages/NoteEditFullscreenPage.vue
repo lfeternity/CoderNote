@@ -1,21 +1,19 @@
 <template>
-  <section class="fade-in">
-    <h2>编辑笔记</h2>
-    <div class="surface-card block" v-loading="loading">
-      <NoteForm
-        :model-value="formModel"
-        :language-options="languageOptions"
-        :tag-options="tagOptions"
-        :question-options="questionOptions"
-        :material-options="materialOptions"
-        submit-text="保存修改"
-        :submitting="submitting"
-        :draft-key="`edit_${route.params.noteId}`"
-        :fullscreen-target-path="`/note/update/${route.params.noteId}/fullscreen`"
-        @submit="onSubmit"
-        @cancel="$router.push('/note/list')"
-      />
-    </div>
+  <section class="note-edit-fullscreen-page fade-in" v-loading="loading">
+    <NoteForm
+      :model-value="formModel"
+      :language-options="languageOptions"
+      :tag-options="tagOptions"
+      :question-options="questionOptions"
+      :material-options="materialOptions"
+      submit-text="保存修改"
+      :submitting="submitting"
+      :draft-key="`edit_${route.params.noteId}`"
+      :force-fullscreen="true"
+      :fullscreen-exit-path="`/note/update/${route.params.noteId}`"
+      @submit="onSubmit"
+      @cancel="$router.push(`/note/update/${route.params.noteId}`)"
+    />
   </section>
 </template>
 
@@ -109,14 +107,15 @@ loadDetail()
 </script>
 
 <style scoped>
-h2 {
-  margin: 0 0 12px;
-  color: var(--primary);
+.note-edit-fullscreen-page {
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
 }
 
-.block {
-  padding: 16px;
-  height: calc(100vh - 178px);
-  min-height: 620px;
+.note-edit-fullscreen-page :deep(.note-compose) {
+  height: 100vh;
 }
 </style>
