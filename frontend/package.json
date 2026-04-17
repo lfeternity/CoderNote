@@ -27,7 +27,7 @@
     "@tiptap/vue-3": "^3.22.3",
     "axios": "^1.8.4",
     "dompurify": "^3.3.3",
-    "element-plus": "^2.9.8",
+    "element-plus": "^2.13.7",
     "highlight.js": "^11.11.1",
     "lowlight": "^3.3.0",
     "pinia": "^2.3.1",
