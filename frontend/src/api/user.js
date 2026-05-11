@@ -37,23 +37,3 @@ export function resetAvatar() {
 export function changePassword(payload) {
   return request.put('/user/change-password', payload)
 }
-
-export function getOauthPending(bindToken) {
-  return request.get(`/user/oauth/pending/${encodeURIComponent(bindToken)}`)
-}
-
-export function oauthBindExisting(payload) {
-  return request.post('/user/oauth/bind-existing', payload)
-}
-
-export function oauthAutoRegister(payload) {
-  return request.post('/user/oauth/auto-register', payload)
-}
-
-export function getOauthBindings() {
-  return request.get('/user/oauth/bindings')
-}
-
-export function unbindOauth(platform) {
-  return request.delete(`/user/oauth/bindings/${encodeURIComponent(platform)}`)
-}

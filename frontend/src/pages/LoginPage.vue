@@ -74,24 +74,6 @@
           </el-form-item>
         </el-form>
 
-        <div class="oauth-divider">
-          <span>其他登录方式</span>
-        </div>
-
-        <div class="oauth-grid">
-          <button
-            v-for="item in oauthPlatforms"
-            :key="item.code"
-            class="oauth-button"
-            type="button"
-            :style="{ '--brand': item.color }"
-            @click="onOauthLogin(item)"
-          >
-            <span class="oauth-icon">{{ item.icon }}</span>
-            <span>{{ item.label }} 登录</span>
-          </button>
-        </div>
-
         <section class="form-decoration" aria-hidden="true">
           <div class="form-decoration-head">
             <span>After Sign In</span>
@@ -118,7 +100,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PublicTopNav from '../components/layout/PublicTopNav.vue'
@@ -131,11 +113,6 @@ const authStore = useAuthStore()
 const loading = ref(false)
 const formRef = ref(null)
 const captchaImage = ref('')
-const oauthPlatforms = [
-  { code: 'qq', label: 'QQ', icon: 'Q', color: '#12B7F5' },
-  { code: 'wechat', label: '微信', icon: '微', color: '#07C160' },
-  { code: 'github', label: 'GitHub', icon: 'GH', color: '#24292F' }
-]
 
 const form = reactive({
   nickname: '',
@@ -156,25 +133,6 @@ async function loadCaptcha() {
 }
 
 loadCaptcha()
-onMounted(() => {
-  const oauthMessage = typeof route.query.oauthMessage === 'string'
-    ? route.query.oauthMessage.trim()
-    : ''
-  if (oauthMessage) {
-    ElMessage.info(oauthMessage)
-  }
-})
-
-function onOauthLogin(item) {
-  const redirectPath = typeof route.query.redirect === 'string'
-    ? route.query.redirect
-    : '/error-question/list'
-  const query = new URLSearchParams({
-    clientBaseUrl: window.location.origin,
-    redirect: redirectPath
-  })
-  window.location.href = `/api/v1/user/oauth/login/authorize/${item.code}?${query.toString()}`
-}
 
 function onSubmit() {
   formRef.value.validate(async (valid) => {
@@ -390,35 +348,6 @@ function onSubmit() {
   border-radius: 10px;
 }
 
-.oauth-divider {
-  margin: 14px 0 12px;
-  position: relative;
-  text-align: center;
-}
-
-.oauth-divider::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  border-top: 1px solid var(--border-soft);
-}
-
-.oauth-divider span {
-  position: relative;
-  padding: 0 12px;
-  background: var(--surface);
-  color: var(--text-sub);
-  font-size: 13px;
-}
-
-.oauth-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
 .form-decoration {
   margin-top: auto;
   border-radius: 16px;
@@ -477,38 +406,6 @@ function onSubmit() {
   font-size: 12px;
 }
 
-.oauth-button {
-  height: 42px;
-  border-radius: 10px;
-  border: 1px solid var(--brand);
-  background: var(--surface);
-  color: var(--brand);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.oauth-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(20, 20, 19, 0.1);
-}
-
-.oauth-icon {
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: var(--brand);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-}
-
 @media (max-width: 1024px) {
   .auth-stage {
     width: calc(100% - 16px);
@@ -533,7 +430,6 @@ function onSubmit() {
     flex-wrap: wrap;
   }
 
-  .oauth-grid,
   .decoration-grid,
   .form-decoration-row {
     grid-template-columns: 1fr;

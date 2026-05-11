@@ -100,24 +100,6 @@ app:
       api-key: ${CLAUDE_API_KEY:}
       endpoint: ${CLAUDE_ENDPOINT:https://api.anthropic.com/v1/messages}
       model: ${CLAUDE_MODEL:claude-3-5-sonnet-latest}
-  oauth:
-    frontend-base-url: ${OAUTH_FRONTEND_BASE_URL:http://127.0.0.1:5173}
-    backend-base-url: ${OAUTH_BACKEND_BASE_URL:http://127.0.0.1:8080}
-    state-expire-seconds: 300
-    pending-expire-seconds: 600
-    platforms:
-      github:
-        enabled: ${OAUTH_GITHUB_ENABLED:false}
-        client-id: ${OAUTH_GITHUB_CLIENT_ID:}
-        client-secret: ${OAUTH_GITHUB_CLIENT_SECRET:}
-      qq:
-        enabled: ${OAUTH_QQ_ENABLED:false}
-        client-id: ${OAUTH_QQ_CLIENT_ID:}
-        client-secret: ${OAUTH_QQ_CLIENT_SECRET:}
-      wechat:
-        enabled: ${OAUTH_WECHAT_ENABLED:false}
-        client-id: ${OAUTH_WECHAT_CLIENT_ID:}
-        client-secret: ${OAUTH_WECHAT_CLIENT_SECRET:}
   note-version:
     max-versions-per-note: 50
     content-size-limit-bytes: 5242880

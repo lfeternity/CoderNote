@@ -9,10 +9,8 @@ import com.codernote.platform.dto.user.RegisterRequest;
 import com.codernote.platform.dto.user.UpdateProfileRequest;
 import com.codernote.platform.dto.user.UserProfileVO;
 import com.codernote.platform.entity.User;
-import com.codernote.platform.entity.UserOauthBind;
 import com.codernote.platform.exception.BizException;
 import com.codernote.platform.mapper.UserMapper;
-import com.codernote.platform.mapper.UserOauthBindMapper;
 import com.codernote.platform.service.AvatarService;
 import com.codernote.platform.service.UserService;
 import com.codernote.platform.util.PasswordUtil;
@@ -64,16 +62,13 @@ public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserMapper userMapper;
-    private final UserOauthBindMapper userOauthBindMapper;
     private final AvatarService avatarService;
     private final StringRedisTemplate stringRedisTemplate;
 
     public UserServiceImpl(UserMapper userMapper,
-                           UserOauthBindMapper userOauthBindMapper,
                            AvatarService avatarService,
                            StringRedisTemplate stringRedisTemplate) {
         this.userMapper = userMapper;
-        this.userOauthBindMapper = userOauthBindMapper;
         this.avatarService = avatarService;
         this.stringRedisTemplate = stringRedisTemplate;
     }
@@ -177,18 +172,7 @@ public class UserServiceImpl implements UserService {
         vo.setMajor(user.getMajor());
         vo.setRemark(user.getRemark());
         vo.setRegisterTime(user.getCreatedAt());
-        String avatarUrl = avatarService.buildAvatarUrl(user.getId());
-        if (!StringUtils.hasText(avatarUrl)) {
-            UserOauthBind latestBind = userOauthBindMapper.selectOne(new LambdaQueryWrapper<UserOauthBind>()
-                    .eq(UserOauthBind::getUserId, user.getId())
-                    .isNotNull(UserOauthBind::getPlatformAvatarUrl)
-                    .orderByDesc(UserOauthBind::getUpdatedAt)
-                    .last("LIMIT 1"));
-            if (latestBind != null && StringUtils.hasText(latestBind.getPlatformAvatarUrl())) {
-                avatarUrl = latestBind.getPlatformAvatarUrl();
-            }
-        }
-        vo.setAvatarUrl(avatarUrl);
+        vo.setAvatarUrl(avatarService.buildAvatarUrl(user.getId()));
         return vo;
     }
 

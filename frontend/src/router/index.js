@@ -5,7 +5,6 @@ import AppLayout from '../components/layout/AppLayout.vue'
 import HomePage from '../pages/HomePage.vue'
 import LoginPage from '../pages/LoginPage.vue'
 import RegisterPage from '../pages/RegisterPage.vue'
-import OauthBindPage from '../pages/OauthBindPage.vue'
 import UserCenterPage from '../pages/UserCenterPage.vue'
 import ChangePasswordPage from '../pages/ChangePasswordPage.vue'
 import QuestionListPage from '../pages/QuestionListPage.vue'
@@ -36,7 +35,6 @@ const routes = [
   { path: '/index', component: HomePage, meta: { publicPage: true } },
   { path: '/login', component: LoginPage, meta: { guestOnly: true } },
   { path: '/register', component: RegisterPage, meta: { guestOnly: true } },
-  { path: '/oauth/bind', component: OauthBindPage, meta: { guestOnly: true } },
   { path: '/note/add/fullscreen', component: NoteAddFullscreenPage, meta: { requiresAuth: true } },
   { path: '/note/update/:noteId/fullscreen', component: NoteEditFullscreenPage, meta: { requiresAuth: true } },
   {
@@ -86,14 +84,6 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()
   await authStore.bootstrap()
-
-  if (to.query.oauthLoggedIn === '1' && !authStore.isLoggedIn) {
-    try {
-      await authStore.refreshProfile()
-    } catch (error) {
-      authStore.clearProfile()
-    }
-  }
 
   if (to.meta.requiresAuth && !authStore.isLoggedIn) {
     return { path: '/login', query: { redirect: to.fullPath } }
